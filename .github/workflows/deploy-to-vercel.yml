@@ -1,0 +1,43 @@
+name: Deploy Next.js to Vercel
+
+on:
+  push:
+    branches:
+      - main # main ブランチへのプッシュ時に実行
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }} # Vercelの組織ID
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }} # VercelのプロジェクトID
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # GitHub Actionsの実行環境
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # リポジトリのコードをチェックアウト
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Node.jsのバージョン。Next.jsの要件に合わせてください。
+
+      - name: Install dependencies
+        run: npm install # または yarn install, pnpm install
+
+      - name: Build Next.js application
+        run: npm run build # または yarn build, pnpm build
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest # Vercel CLIをグローバルにインストール
+
+      - name: Pull Vercel environment variables
+        # Vercelの環境変数をローカルにプルします。
+        # 本番環境デプロイ時に必要になる場合があります。
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        # --prebuilt: ローカルでビルドされたものを使用する
+        # --prod: 本番環境としてデプロイする
+        # --token: Vercelの認証トークン
