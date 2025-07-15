@@ -8,14 +8,12 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
-import { usePathname } from "next/navigation";
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const supabase = createClient();
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     const getUser = async () => {
@@ -23,7 +21,7 @@ export default function Header() {
       setUser(data.user);
     };
     getUser();
-  }, [isOpen, pathname]);
+  }, [supabase.auth]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();

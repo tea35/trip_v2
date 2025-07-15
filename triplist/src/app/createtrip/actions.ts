@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { getChecklistTemplate } from "@/lib/data/cheklistTemplates";
+import { getChecklistTemplate } from "@/lib/data/checklistTemplates";
 import { calculateTripDays } from "@/utils/date";
 
 // Server Actionの戻り値の型

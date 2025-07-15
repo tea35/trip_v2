@@ -1,12 +1,15 @@
 import { getChecklistData } from "@/lib/data/checklist";
 import ChecklistClient from "./checklistClient";
+import { redirect } from "next/navigation";
+import { getTripIdFromHeaders } from "@/lib/utils/url";
 
-interface PageProps {
-  params: { trip_id: string };
-}
-
-export default async function ChecklistPage({ params }: PageProps) {
-  const trip_id = Number(params.trip_id);
+export default async function ChecklistPage() {
+  const trip_id = await getTripIdFromHeaders();
+  console.log(trip_id);
+  // trip_idが取得できなかった場合（nullの場合）はリダイレクト
+  if (trip_id === null) {
+    return redirect("/triplist");
+  }
 
   // サーバーサイドで初期データを安全に取得
   const { trip, items } = await getChecklistData(trip_id);
