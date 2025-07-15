@@ -10,50 +10,71 @@ interface ActionResult {
   error: string | null;
 }
 
-// 地域名から緯度経度を取得するサーバーサイド関数
+/**
+ * 地域名から緯度経度を取得するサーバーサイド専用関数
+ * @param address - 検索する場所の文字列
+ */
 async function fetchLatLng(address: string) {
-  // NEXT_PUBLIC_プレフィックスは不要。サーバーサイドでのみ使われる
-  const apiKey = process.env.NEXT_PUBLIC_Maps_API_KEY;
-  if (!apiKey) throw new Error("Google Maps APIキーが設定されていません。");
+  // ★修正点: サーバーサイド専用の環境変数名に変更
+  // これにより、このAPIキーがサーバーでのみ使用されるべき機密情報であることが明確になります。
+  // Vercelの環境変数設定も、この新しい名前（GOOGLE_MAPS_SERVER_KEY）で登録してください。
+  const apiKey = process.env.GOOGLE_MAPS_SERVER_KEY;
+  if (!apiKey) {
+    throw new Error("Google Maps APIキーがサーバーに設定されていません。");
+  }
 
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
     address
   )}&key=${apiKey}&language=ja`;
 
   const response = await fetch(url);
-  const data = await response.json();
-
-  if (data.status !== "OK" || data.results.length === 0) {
-    throw new Error("指定された場所が見つかりませんでした。");
+  if (!response.ok) {
+    throw new Error(
+      `Google Maps APIへのリクエストに失敗しました: ${response.statusText}`
+    );
   }
+
+  const data = await response.json();
+  if (data.status !== "OK" || !data.results?.[0]) {
+    console.error("Geocoding API Error:", data.error_message || data.status);
+    throw new Error(`「${address}」の場所が見つかりませんでした。`);
+  }
+
   return data.results[0].geometry.location; // { lat, lng }
 }
 
+/**
+ * 新しい旅行プランを作成するサーバーアクション
+ * @param prevState - useActionStateの前の状態
+ * @param formData - フォームデータ
+ */
 export async function createTrip(
   prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const supabase = await createClient();
+  const supabase = createClient();
 
-  // 1. 認証ユーザー情報をCookieから安全に取得
+  // 1. 認証ユーザー情報を取得
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await (await supabase).auth.getUser();
   if (!user) {
-    return { error: "認証されていません。" };
+    return { error: "認証されていません。ログインしてください。" };
   }
 
-  // 2. フォームからデータを取得
+  // 2. フォームデータを取得
   const locationName = formData.get("location") as string;
   const startDateStr = formData.get("startDate") as string;
   const endDateStr = formData.get("endDate") as string;
 
   if (!locationName || !startDateStr || !endDateStr) {
-    return { error: "すべてのフィールドを入力してください。" };
+    return { error: "すべての必須フィールドを入力してください。" };
   }
+
   let newTripId: number | null = null;
 
   try {
+    // 外部APIを呼び出して緯度経度を取得
     const location = await fetchLatLng(locationName);
 
     const tripData = {
@@ -65,19 +86,20 @@ export async function createTrip(
       end_date: endDateStr,
     };
 
-    // 1. 旅行データを挿入
-    const { data: newTrip, error: tripError } = await supabase
+    // 3. 旅行データをデータベースに挿入
+    const { data: newTrip, error: tripError } = await (await supabase)
       .from("trips")
       .insert(tripData)
       .select("trip_id")
       .single();
 
-    if (tripError) throw tripError;
-    if (!newTrip) throw new Error("旅行の作成に失敗しました。");
+    if (tripError) throw tripError; // DBエラーはここでキャッチさせる
+    if (!newTrip)
+      throw new Error("データベースへの旅行データの保存に失敗しました。");
 
-    newTripId = newTrip.trip_id; // リダイレクト用にIDを保持
+    newTripId = newTrip.trip_id;
 
-    // 2. チェックリストデータを生成
+    // 4. チェックリストデータを生成
     const dateDiff = calculateTripDays(startDateStr, endDateStr);
     const checklistData = getChecklistTemplate(
       newTrip.trip_id,
@@ -86,25 +108,21 @@ export async function createTrip(
       dateDiff
     );
 
-    // 3. チェックリストデータを挿入
-    const { error: itemsError } = await supabase
+    // 5. チェックリストデータをデータベースに挿入
+    const { error: itemsError } = await (await supabase)
       .from("items")
       .insert(checklistData);
 
-    if (itemsError) throw itemsError;
+    if (itemsError) throw itemsError; // DBエラーはここでキャッチさせる
   } catch (error) {
-    console.error("旅行作成エラー:", error);
+    console.error("旅行作成プロセスでのエラー:", error);
+    // エラー内容をクライアントに返す
     if (error instanceof Error) {
       return { error: error.message };
     }
-    return { error: "不明なエラーが発生しました。" };
+    return { error: "旅行の作成中に不明なエラーが発生しました。" };
   }
 
-  // 4. すべての処理が成功した場合、try-catchブロックの外でリダイレクトを実行
-  if (newTripId) {
-    redirect(`/checklist/${newTripId}`);
-  }
-
-  // 通常、redirectが実行されるため、この行には到達しない
-  return { error: "リダイレクトに失敗sしました。" };
+  // 6. すべての処理が成功した場合、リダイレクト
+  redirect(`/checklist/${newTripId}`);
 }

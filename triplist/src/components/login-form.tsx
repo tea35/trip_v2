@@ -2,6 +2,7 @@
 
 import { useActionState } from "react"; // reactからインポート
 import { login } from "@/app/(auth)/login/actions";
+import { handleGoogleLogin } from "@/app/(auth)/login/components/GoogleLoginButton";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm({
   className,
@@ -22,17 +22,6 @@ export function LoginForm({
 }: React.ComponentProps<"div">) {
   // useActionStateからエラーメッセージと保留状態(isPending)を取得
   const [errorMessage, dispatch, isPending] = useActionState(login, undefined);
-  const supabase = createClient();
-
-  // Googleログイン処理
-  const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${location.origin}/auth/callback`,
-      },
-    });
-  };
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>

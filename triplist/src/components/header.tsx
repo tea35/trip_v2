@@ -21,6 +21,18 @@ export default function Header() {
       setUser(data.user);
     };
     getUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        // sessionがあればユーザー情報を、なければnullを設定
+        setUser(session?.user ?? null);
+      }
+    );
+
+    // コンポーネントが非表示になるときにリスナーを解除（メモリリーク防止）
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, [supabase.auth]);
 
   const handleLogout = async () => {
