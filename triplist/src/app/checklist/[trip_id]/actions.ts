@@ -66,3 +66,22 @@ export async function updateItemQuantity(
 
   revalidatePath(path);
 }
+// チェックされている項目を隠すかどうか
+export async function updateUserHideCompletedToggle(hide_completed: {
+  hideCompleted: boolean;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+
+  const { error } = await supabase
+    .from("user_setting") // ユーザー設定を保存するテーブル名
+    .update(hide_completed)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("User preference update error:", error);
+  }
+}

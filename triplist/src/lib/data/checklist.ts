@@ -33,9 +33,18 @@ export async function getChecklistData(tripId: number) {
     .eq("trip_id", tripId)
     .order("item_id", { ascending: true });
 
+  const { data: setting, error: hide_completed_error } = await supabase
+    .from("user_setting") // ユーザー設定を保存するテーブル名
+    .select("hideCompleted")
+    .eq("user_id", user.id)
+    .single();
+
   if (itemsError) {
     console.error("Failed to fetch items:", itemsError);
-    return { trip, items: [] }; // エラーでも画面は表示させる
+    return { trip, items: [], hide_completed: false }; // エラーでも画面は表示させる
   }
-  return { trip, items };
+  if (hide_completed_error) {
+    return { trip, items, hide_completed: false };
+  }
+  return { trip, items, hide_completed: !!setting?.hideCompleted };
 }

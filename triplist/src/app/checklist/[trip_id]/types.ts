@@ -11,4 +11,5 @@ export interface Props {
   trip_id: number;
   initialTrip: Trip;
   initialItems: Item[];
+  hideCompletedDefault: boolean;
 }
