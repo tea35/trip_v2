@@ -5,6 +5,7 @@ import { deleteItem, toggleItemCheck, updateItemQuantity } from "./actions";
 import AddItemForm from "./components/AddItemForm";
 import ChecklistHeader from "./components/ChecklistHeader";
 import ChecklistItem from "./components/ChecklistItem";
+import AiSuggestion from "./components/AiSuggestion";
 import { Item, Props } from "./types";
 
 // 型定義（types.tsなど別のファイルに分けるのが望ましい）
@@ -87,6 +88,7 @@ export default function ChecklistClient({
       </div>
 
       <AddItemForm tripId={trip_id} />
+      <AiSuggestion tripId={trip_id} />
     </div>
   );
 }
