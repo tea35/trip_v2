@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 // Server Actionの戻り値の型
 interface SuggestionResult {
+  ai_suggestion_counts?: number;
   suggestions?: string[];
   error?: string;
 }
@@ -15,6 +16,39 @@ interface TripInfo {
   end_date: string;
   items: { item_name: string }[];
 }
+
+export async function getAiUsageCount(): Promise<{
+  count: number;
+  limit: number;
+  error?: string;
+}> {
+  const dailyLimitValue = process.env.AI_SUGGESTION_DAILY_LIMIT ?? "3";
+  const dailyLimit = parseInt(dailyLimitValue, 10);
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    // ログインしていない場合は0回として扱う
+    return { count: dailyLimit, limit: dailyLimit, error: "Not authenticated" };
+  }
+
+  const { data: userSetting, error } = await supabase
+    .from("user_setting")
+    .select("ai_suggestion_counts")
+    .eq("user_id", user.id)
+    .single();
+
+  if (error) {
+    console.error("Error fetching usage count:", error);
+    // エラー時は利用不可として扱う
+    return { count: dailyLimit, limit: dailyLimit };
+  }
+
+  return { count: userSetting.ai_suggestion_counts, limit: dailyLimit };
+}
+
 function getMockSuggestions(): string[] {
   return [
     "予備のバッテリー",
@@ -41,6 +75,33 @@ export async function getAiSuggestions(
   }
   const supabase = await createClient();
 
+  // 回数制限の確認
+  // 1. ユーザーの現在の利用回数を取得
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "認証されていません。" };
+  }
+  const { data: userSetting, error: settingError } = await supabase
+    .from("user_setting") // テーブル名を user_setting に変更
+    .select("ai_suggestion_counts")
+    .eq("user_id", user.id) // user_settingテーブルのidがuser.idと一致するものを検索
+    .single();
+
+  if (settingError) {
+    console.error("Error fetching user_setting for rate limit:", settingError);
+    return { error: "ユーザー情報の取得に失敗しました。" };
+  }
+
+  // 2. 上限回数に達しているかチェック (日付比較は不要)
+  const dailyLimitValue = Number(process.env.AI_SUGGESTION_DAILY_LIMIT) ?? 3;
+  if (userSetting.ai_suggestion_counts >= dailyLimitValue) {
+    return {
+      error: `AI提案の利用は1日${dailyLimitValue}回までです。明日またお試しください。`,
+    };
+  }
+  // GPT問い合わせ
   // 1. 旅行情報と既存のチェックリストアイテムを取得
   // 1. tripIdを元に、旅行先と期間、既存のアイテムリストを取得
   const { data, error: tripError } = await supabase
@@ -109,12 +170,23 @@ export async function getAiSuggestions(
     const jsonString = data.candidates[0].content.parts[0].text;
     const parsed = JSON.parse(jsonString);
 
-    return { suggestions: parsed.items };
+    await supabase
+      .from("user_setting")
+      .update({
+        ai_suggestion_counts: userSetting.ai_suggestion_counts + 1,
+      })
+      .eq("user_id", user.id);
+
+    return {
+      ai_suggestion_counts: userSetting.ai_suggestion_counts + 1,
+      suggestions: parsed.items,
+    };
   } catch (error) {
     console.error("AI提案の取得中にエラーが発生しました:", error);
     return { error: "AI提案の処理中にエラーが発生しました。" };
   }
 }
+
 interface SelectedItem {
   item_name: string;
   quantity: number;
