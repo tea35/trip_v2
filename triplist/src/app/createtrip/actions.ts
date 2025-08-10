@@ -66,18 +66,36 @@ export async function createTrip(
   const locationName = formData.get("location") as string;
   const startDateStr = formData.get("startDate") as string;
   const endDateStr = formData.get("endDate") as string;
+  const groupId = formData.get("groupId") as string;
+  const createBothTrips = formData.get("createBothTrips") === "on";
 
   if (!locationName || !startDateStr || !endDateStr) {
     return { error: "すべての必須フィールドを入力してください。" };
   }
 
   let newTripId: number | null = null;
+  let personalTripId: number | null = null;
+  let groupTripId: number | null = null;
 
   try {
     // 外部APIを呼び出して緯度経度を取得
     const location = await fetchLatLng(locationName);
 
-    const tripData = {
+    // グループ旅行の場合のグループメンバーシップ確認
+    if (groupId) {
+      const { data: membership } = await (await supabase)
+        .from("group_members")
+        .select("role")
+        .eq("group_id", parseInt(groupId))
+        .eq("user_id", user.id)
+        .single();
+
+      if (!membership) {
+        return { error: "このグループのメンバーではありません。" };
+      }
+    }
+
+    const baseTripData = {
       user_id: user.id,
       location_name: locationName,
       latitude: location.lat,
@@ -86,34 +104,108 @@ export async function createTrip(
       end_date: endDateStr,
     };
 
-    // 3. 旅行データをデータベースに挿入
-    const { data: newTrip, error: tripError } = await (await supabase)
-      .from("trips")
-      .insert(tripData)
-      .select("trip_id")
-      .single();
+    if (groupId && createBothTrips) {
+      // グループ旅行と個人旅行を両方作成して紐付け
 
-    if (tripError) throw tripError; // DBエラーはここでキャッチさせる
-    if (!newTrip)
-      throw new Error("データベースへの旅行データの保存に失敗しました。");
+      // 1. グループ旅行を作成
+      const { data: groupTrip, error: groupTripError } = await (
+        await supabase
+      )
+        .from("trips")
+        .insert({
+          ...baseTripData,
+          group_id: parseInt(groupId),
+          trip_type: "group",
+        })
+        .select("trip_id")
+        .single();
 
-    newTripId = newTrip.trip_id;
+      if (groupTripError) throw groupTripError;
+      groupTripId = groupTrip.trip_id;
 
-    // 4. チェックリストデータを生成
+      // 2. 個人旅行を作成
+      const { data: personalTrip, error: personalTripError } = await (
+        await supabase
+      )
+        .from("trips")
+        .insert({
+          ...baseTripData,
+          trip_type: "personal",
+        })
+        .select("trip_id")
+        .single();
+
+      if (personalTripError) throw personalTripError;
+      personalTripId = personalTrip.trip_id;
+
+      // 3. 紐付けを作成
+      const { error: linkError } = await (await supabase)
+        .from("trip_links")
+        .insert({
+          personal_trip_id: personalTripId,
+          group_trip_id: groupTripId,
+        });
+
+      if (linkError) throw linkError;
+
+      newTripId = personalTripId; // 個人旅行のページにリダイレクト
+    } else if (groupId) {
+      // グループ旅行のみ作成
+      const { data: newTrip, error: tripError } = await (
+        await supabase
+      )
+        .from("trips")
+        .insert({
+          ...baseTripData,
+          group_id: parseInt(groupId),
+          trip_type: "group",
+        })
+        .select("trip_id")
+        .single();
+
+      if (tripError) throw tripError;
+      newTripId = newTrip.trip_id;
+    } else {
+      // 個人旅行のみ作成
+      const { data: newTrip, error: tripError } = await (
+        await supabase
+      )
+        .from("trips")
+        .insert({
+          ...baseTripData,
+          trip_type: "personal",
+        })
+        .select("trip_id")
+        .single();
+
+      if (tripError) throw tripError;
+      newTripId = newTrip.trip_id;
+    }
+
+    // 4. チェックリストデータを生成（全ての旅行に対して）
     const dateDiff = calculateTripDays(startDateStr, endDateStr);
-    const checklistData = getChecklistTemplate(
-      newTrip.trip_id,
-      location.lat,
-      location.lng,
-      dateDiff
-    );
+    const tripsToCreateChecklistFor = [];
 
-    // 5. チェックリストデータをデータベースに挿入
-    const { error: itemsError } = await (await supabase)
-      .from("items")
-      .insert(checklistData);
+    if (personalTripId) tripsToCreateChecklistFor.push(personalTripId);
+    if (groupTripId) tripsToCreateChecklistFor.push(groupTripId);
+    if (!personalTripId && !groupTripId && newTripId)
+      tripsToCreateChecklistFor.push(newTripId);
 
-    if (itemsError) throw itemsError; // DBエラーはここでキャッチさせる
+    for (const tripId of tripsToCreateChecklistFor) {
+      const checklistData = getChecklistTemplate(
+        tripId,
+        location.lat,
+        location.lng,
+        dateDiff
+      );
+
+      // 5. チェックリストデータをデータベースに挿入
+      const { error: itemsError } = await (await supabase)
+        .from("items")
+        .insert(checklistData);
+
+      if (itemsError) throw itemsError;
+    }
   } catch (error) {
     console.error("旅行作成プロセスでのエラー:", error);
     // エラー内容をクライアントに返す
