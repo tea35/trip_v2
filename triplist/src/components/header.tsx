@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Plus, Users, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 
@@ -41,8 +41,8 @@ export default function Header() {
     setIsOpen(false);
   };
 
-  const handleLogin = () => {
-    router.push("/login");
+  const handleNavigation = (path: string) => {
+    router.push(path);
     setIsOpen(false);
   };
 
@@ -56,12 +56,47 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Desktop CTA */}
+        {/* Desktop Navigation - メニューボタンを横並び */}
         <div className="hidden items-center space-x-4 md:flex">
           {user ? (
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              ログアウト
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigation("/createtrip")}
+                className="flex items-center"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                旅行作成
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigation("/groups/create")}
+                className="flex items-center"
+              >
+                <Users className="mr-2 h-4 w-4" />
+                グループ作成
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleNavigation("/groups")}
+                className="flex items-center"
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                グループ管理
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                ログアウト
+              </Button>
+            </>
           ) : (
             <>
               <Button
@@ -82,45 +117,75 @@ export default function Header() {
           )}
         </div>
 
-        {/* Mobile Menu */}
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-          {/* ... (Sheetの中身は変更なし) ... */}
-          <SheetTrigger asChild className="md:hidden">
-            <Button variant="ghost" size="icon">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-[300px] sm:w-[400px]">
-            <div className="mt-4 flex flex-col space-y-4">
-              {user ? (
-                <Button
-                  variant="ghost"
-                  onClick={handleLogout}
-                  className="justify-start"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  ログアウト
-                </Button>
-              ) : (
-                <div className="flex flex-col space-y-2 pt-4 border-t">
-                  <Button variant="ghost" onClick={handleLogin}>
-                    ログイン
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      router.push("/signup");
-                      setIsOpen(false);
-                    }}
-                    className="bg-blue-400 text-white hover:bg-blue-500"
-                  >
-                    新規登録
-                  </Button>
+        {/* Mobile Menu - モバイルのみ表示 */}
+        <div className="md:hidden">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">メニュー</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-[300px] sm:w-[350px]">
+              <div className="flex flex-col h-full">
+                <div className="flex-1 py-6">
+                  {user ? (
+                    <nav className="space-y-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleNavigation("/createtrip")}
+                        className="w-full justify-start text-left"
+                      >
+                        <Plus className="mr-3 h-4 w-4" />
+                        旅行の新規作成
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleNavigation("/groups/create")}
+                        className="w-full justify-start text-left"
+                      >
+                        <Users className="mr-3 h-4 w-4" />
+                        グループ作成
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleNavigation("/groups")}
+                        className="w-full justify-start text-left"
+                      >
+                        <Settings className="mr-3 h-4 w-4" />
+                        グループ管理
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        onClick={handleLogout}
+                        className="w-full justify-start text-left text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <LogOut className="mr-3 h-4 w-4" />
+                        ログアウト
+                      </Button>
+                    </nav>
+                  ) : (
+                    <nav className="space-y-2">
+                      <Button
+                        variant="ghost"
+                        onClick={() => handleNavigation("/login")}
+                        className="w-full justify-start text-left"
+                      >
+                        ログイン
+                      </Button>
+                      <Button
+                        onClick={() => handleNavigation("/register")}
+                        className="w-full justify-start text-left bg-blue-400 text-white hover:bg-blue-500"
+                      >
+                        新規登録
+                      </Button>
+                    </nav>
+                  )}
                 </div>
-              )}
-            </div>
-          </SheetContent>
-        </Sheet>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );
