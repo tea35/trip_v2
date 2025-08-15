@@ -13,59 +13,139 @@ import { Item, Props } from "./types";
 export default function ChecklistClient({
   trip_id,
   initialTrip,
+  initialLinkedTrip,
   initialItems,
   hideCompletedDefault,
 }: Props) {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [hideCompleted, setHideCompleted] = useState(hideCompletedDefault);
+  
+  // デフォルトタブを個人旅行に設定
+  const getDefaultTab = () => {
+    if (initialLinkedTrip) {
+      // 紐付けがある場合、常に個人旅行を最初に表示
+      return initialTrip.trip_type === "personal" ? "main" : "linked";
+    }
+    return "main";
+  };
+  
+  const [activeTab, setActiveTab] = useState<"main" | "linked">(getDefaultTab());
+  const [linkedItems, setLinkedItems] = useState<Item[]>([]);
+
+  // 現在アクティブな旅行IDを取得
+  const currentTripId =
+    activeTab === "main" ? trip_id : initialLinkedTrip?.trip_id || trip_id;
 
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
 
+  // 紐付けされた旅行のアイテムを取得
+  useEffect(() => {
+    if (initialLinkedTrip && activeTab === "linked") {
+      const fetchLinkedItems = async () => {
+        try {
+          const response = await fetch(
+            `/api/checklist/${initialLinkedTrip.trip_id}/items`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            setLinkedItems(data);
+          }
+        } catch (error) {
+          console.error("Failed to fetch linked items:", error);
+        }
+      };
+      fetchLinkedItems();
+    }
+  }, [initialLinkedTrip, activeTab]);
+
+  // 現在表示すべきアイテムを取得
+  const getCurrentItems = () => {
+    if (activeTab === "linked" && initialLinkedTrip) {
+      return linkedItems;
+    }
+    return items;
+  };
+
   // UIを即座に更新（オプティミスティックUI）
   const handleToggle = (itemId: number, newCheckedState: boolean) => {
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.item_id === itemId
-          ? { ...item, is_checked: newCheckedState }
-          : item
-      )
-    );
+    if (activeTab === "linked") {
+      setLinkedItems((currentItems) =>
+        currentItems.map((item) =>
+          item.item_id === itemId
+            ? { ...item, is_checked: newCheckedState }
+            : item
+        )
+      );
+    } else {
+      setItems((currentItems) =>
+        currentItems.map((item) =>
+          item.item_id === itemId
+            ? { ...item, is_checked: newCheckedState }
+            : item
+        )
+      );
+    }
     // サーバーにも更新を通知
-    toggleItemCheck(itemId, newCheckedState, `/checklist/${trip_id}`);
+    toggleItemCheck(itemId, newCheckedState, `/checklist/${currentTripId}`);
   };
 
   const handleDelete = (itemId: number) => {
     if (!confirm("このアイテムを削除しますか？")) return;
-    setItems((currentItems) =>
-      currentItems.filter((item) => item.item_id !== itemId)
-    );
-    deleteItem(itemId, `/checklist/${trip_id}`);
+
+    if (activeTab === "linked") {
+      setLinkedItems((currentItems) =>
+        currentItems.filter((item) => item.item_id !== itemId)
+      );
+    } else {
+      setItems((currentItems) =>
+        currentItems.filter((item) => item.item_id !== itemId)
+      );
+    }
+    deleteItem(itemId, `/checklist/${currentTripId}`);
   };
 
   const handleQuantityChange = (itemId: number, newQuantity: number) => {
     if (newQuantity < 1) return; // 1未満にはしない
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.item_id === itemId ? { ...item, quantity: newQuantity } : item
-      )
-    );
-    updateItemQuantity(itemId, newQuantity, `/checklist/${trip_id}`);
+
+    if (activeTab === "linked") {
+      setLinkedItems((currentItems) =>
+        currentItems.map((item) =>
+          item.item_id === itemId ? { ...item, quantity: newQuantity } : item
+        )
+      );
+    } else {
+      setItems((currentItems) =>
+        currentItems.map((item) =>
+          item.item_id === itemId ? { ...item, quantity: newQuantity } : item
+        )
+      );
+    }
+    updateItemQuantity(itemId, newQuantity, `/checklist/${currentTripId}`);
   };
+
+  const currentItems = getCurrentItems();
   const filteredItems = hideCompleted
-    ? items.filter((item) => !item.is_checked)
-    : items;
+    ? currentItems.filter((item) => !item.is_checked)
+    : currentItems;
 
   return (
-    <div className="flex h-[85vh] w-full max-w-4xl flex-col items-center gap-5 rounded-lg bg-white/85 p-8 shadow-xl">
-      <ChecklistHeader
-        locationName={initialTrip.location_name}
-        hideCompleted={hideCompleted}
-        setHideCompleted={setHideCompleted}
-      />
+    <div className="flex h-[85vh] w-full max-w-4xl flex-col items-center rounded-lg bg-white/85 p-8 shadow-xl">
+      <div className="w-full mb-5">
+        <ChecklistHeader
+          trip={initialTrip}
+          linkedTrip={initialLinkedTrip}
+          hideCompleted={hideCompleted}
+          setHideCompleted={setHideCompleted}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+      </div>
 
-      <div className="h-full w-full overflow-y-auto rounded-lg border border-gray-400 bg-transparent p-4">
+      <div
+        className={`h-full w-full overflow-y-auto border border-gray-400 bg-transparent p-4 rounded-lg`}
+      >
         <ul>
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
@@ -87,8 +167,10 @@ export default function ChecklistClient({
         </ul>
       </div>
 
-      <AddItemForm tripId={trip_id} />
-      <AiSuggestion tripId={trip_id} />
+      <div className="w-full mt-5 flex flex-col gap-3">
+        <AddItemForm tripId={currentTripId} />
+        <AiSuggestion tripId={currentTripId} />
+      </div>
     </div>
   );
 }

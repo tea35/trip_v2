@@ -2,7 +2,11 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
-  if (pathname.startsWith("/checklist/")) {
+  if (
+    pathname.startsWith("/checklist/") || 
+    pathname.startsWith("/groups/") ||
+    pathname.startsWith("/api/checklist/")
+  ) {
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-url", req.url);
 

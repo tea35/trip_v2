@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import { typographyStyles, globalTextSizes, textColors } from "@/styles/typography";
 
 export function LoginForm({
   className,
@@ -27,8 +28,8 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle>ログイン</CardTitle>
-          <CardDescription>
+          <CardTitle className={typographyStyles.cardTitle}>ログイン</CardTitle>
+          <CardDescription className={globalTextSizes.bodySmall}>
             メールアドレスとパスワードを入力してください
           </CardDescription>
         </CardHeader>
@@ -36,27 +37,29 @@ export function LoginForm({
           <form action={dispatch}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-3">
-                <Label htmlFor="email">メールアドレス</Label>
+                <Label htmlFor="email" className={globalTextSizes.label}>メールアドレス</Label>
                 <Input
                   id="email"
                   name="email"
                   type="email"
                   placeholder="m@example.com"
                   required
+                  className={globalTextSizes.input}
                 />
               </div>
               <div className="grid gap-3">
-                <Label htmlFor="login-password">パスワード</Label>
+                <Label htmlFor="login-password" className={globalTextSizes.label}>パスワード</Label>
                 <Input
                   id="login-password"
                   name="password"
                   type="password"
                   required
+                  className={globalTextSizes.input}
                 />
               </div>
 
               {errorMessage && (
-                <p className="text-sm font-medium text-red-500">
+                <p className={`${globalTextSizes.bodySmall} font-medium text-red-500`}>
                   {errorMessage}
                 </p>
               )}
@@ -65,14 +68,14 @@ export function LoginForm({
                 {/* isPendingを直接使ってボタンの状態を制御 */}
                 <Button
                   type="submit"
-                  className="w-full bg-blue-500 text-white hover:bg-blue-600"
+                  className={`w-full bg-blue-500 text-white hover:bg-blue-600 ${typographyStyles.button}`}
                   disabled={isPending}
                 >
                   {isPending ? "ログイン中..." : "ログイン"}
                 </Button>
                 <Button
                   variant="outline"
-                  className="w-full"
+                  className={`w-full ${typographyStyles.button}`}
                   type="button"
                   onClick={handleGoogleLogin}
                 >
@@ -80,7 +83,7 @@ export function LoginForm({
                 </Button>
               </div>
             </div>
-            <div className="mt-4 text-center text-sm">
+            <div className={`mt-4 text-center ${globalTextSizes.bodySmall}`}>
               アカウントがない方は{" "}
               <Link
                 href="/register" // 新規登録ページへのパスを修正
