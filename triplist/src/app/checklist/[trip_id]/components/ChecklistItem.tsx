@@ -27,8 +27,8 @@ export default function ChecklistItem({
           className="h-5 w-5 shrink-0 accent-blue-500"
         />
         <span
-          className={`text-xl ${
-            item.is_checked ? "text-gray-400 line-through" : ""
+          className={`text-sm md:text-base lg:text-lg font-medium ${
+            item.is_checked ? "text-gray-400 line-through" : "text-gray-900"
           }`}
         >
           {item.item_name}
@@ -45,7 +45,7 @@ export default function ChecklistItem({
         >
           -
         </Button>
-        <span className="w-8 text-center text-lg font-medium">
+        <span className="w-8 text-center text-sm md:text-base font-medium">
           {item.quantity}
         </span>
         <Button

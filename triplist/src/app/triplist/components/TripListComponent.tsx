@@ -1,58 +1,308 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { Plus, Search, MapPin } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { typographyStyles, globalTextSizes } from "@/styles/typography";
 import type { Trip, TripListProps } from "../types";
 import TripItem from "./TripItem";
-import AddTripButton from "./AddTripButton";
-import NoTripsMessage from "./NoTripsMessage";
 import { deleteTrip } from "../actions";
+import { createPersonalTripFromGroupTrip } from "@/lib/actions/personalTrip.actions";
+
+// 旅行グループの型定義
+interface TripGroup {
+  id: string;
+  mainTrip: Trip;
+  linkedTrip?: Trip;
+  isLinked: boolean;
+}
 
 export default function TripListComponent({
   user: _user,
   initialTrips,
 }: TripListProps) {
+  const router = useRouter();
   const [trips, setTrips] = useState<Trip[]>(initialTrips);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // 旅行をグループ化する処理
+  const tripGroups = useMemo(() => {
+    const processedIds = new Set<number>();
+    const groups: TripGroup[] = [];
+
+    // 検索フィルタリング
+    const filteredTrips = trips.filter((trip) =>
+      trip.location_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    filteredTrips.forEach((trip) => {
+      if (processedIds.has(trip.trip_id)) return;
+
+      if (trip.hasLinkedTrip) {
+        // グループ旅行の場合：関連する個人旅行があるかチェック
+        if (trip.trip_type === "group") {
+          // このグループ旅行に関連する個人旅行を探す
+          const linkedPersonalTrip = filteredTrips.find(
+            (t) =>
+              t.trip_id !== trip.trip_id &&
+              t.trip_type === "personal" &&
+              t.hasLinkedTrip &&
+              t.location_name === trip.location_name &&
+              t.start_date === trip.start_date &&
+              t.end_date === trip.end_date
+          );
+
+          if (linkedPersonalTrip) {
+            // グループ旅行をメイン、個人旅行をリンクにする
+            groups.push({
+              id: `linked_${trip.trip_id}_${linkedPersonalTrip.trip_id}`,
+              mainTrip: trip,
+              linkedTrip: linkedPersonalTrip,
+              isLinked: true,
+            });
+
+            processedIds.add(trip.trip_id);
+            processedIds.add(linkedPersonalTrip.trip_id);
+          } else {
+            // グループ旅行のみ表示
+            groups.push({
+              id: `single_${trip.trip_id}`,
+              mainTrip: trip,
+              isLinked: false,
+            });
+            processedIds.add(trip.trip_id);
+          }
+        } else if (trip.trip_type === "personal") {
+          // 個人旅行でリンクがある場合：対応するグループ旅行を探す
+          const linkedGroupTrip = filteredTrips.find(
+            (t) =>
+              t.trip_id !== trip.trip_id &&
+              t.trip_type === "group" &&
+              t.hasLinkedTrip &&
+              t.location_name === trip.location_name &&
+              t.start_date === trip.start_date &&
+              t.end_date === trip.end_date
+          );
+
+          if (!linkedGroupTrip) {
+            // 対応するグループ旅行が見つからない場合（表示範囲外）
+            groups.push({
+              id: `single_${trip.trip_id}`,
+              mainTrip: trip,
+              isLinked: false,
+            });
+            processedIds.add(trip.trip_id);
+          }
+          // グループ旅行が見つかった場合は、グループ旅行の処理で一緒に処理される
+        }
+      } else {
+        // リンクがない旅行
+        groups.push({
+          id: `single_${trip.trip_id}`,
+          mainTrip: trip,
+          isLinked: false,
+        });
+        processedIds.add(trip.trip_id);
+      }
+    });
+
+    // 出発日順でソート
+    return groups.sort(
+      (a, b) =>
+        new Date(b.mainTrip.start_date).getTime() -
+        new Date(a.mainTrip.start_date).getTime()
+    );
+  }, [trips, searchTerm]);
 
   const handleDelete = async (tripId: number) => {
-    if (!confirm("この旅行を削除しますか？")) return;
+    // 削除対象の旅行を見つける
+    const tripToDelete = trips.find(t => t.trip_id === tripId);
+    
+    if (!tripToDelete) return;
 
-    // サーバーに削除を依頼
-    const result = await deleteTrip(tripId);
-    // UIを即座に更新（オプティミスティックUI）
-    if (result?.success) {
-      setTrips((currentTrips) =>
-        currentTrips.filter((trip) => trip.trip_id !== tripId)
+    // 紐付けされた旅行の場合の削除順序制御
+    if (tripToDelete.hasLinkedTrip) {
+      // 紐付けされた旅行ペアを探す
+      const linkedTrip = trips.find(t => 
+        t.trip_id !== tripId &&
+        t.hasLinkedTrip &&
+        t.location_name === tripToDelete.location_name &&
+        t.start_date === tripToDelete.start_date &&
+        t.end_date === tripToDelete.end_date
       );
+
+      if (linkedTrip) {
+        // 両方が存在する場合、グループ旅行を削除しようとしたら個人旅行を削除
+        if (tripToDelete.trip_type === "group") {
+          if (!confirm("紐付けされた個人旅行を削除します。よろしいですか？")) return;
+          tripId = linkedTrip.trip_id; // 個人旅行のIDに変更
+        } else {
+          if (!confirm("この個人旅行を削除しますか？次回はグループ旅行が削除されます。")) return;
+        }
+      } else {
+        if (!confirm("この旅行を削除しますか？")) return;
+      }
+    } else {
+      if (!confirm("この旅行を削除しますか？")) return;
     }
 
-    if (result?.error) {
-      console.error("旅行の削除中にエラーが発生しました:", result.error);
-      alert("削除に失敗しました。");
-      // エラーが発生した場合、UIを元に戻す（任意）
-      setTrips(initialTrips);
+    try {
+      const result = await deleteTrip(tripId);
+      if (result?.success) {
+        setTrips((currentTrips) => {
+          const updatedTrips = currentTrips.filter((trip) => trip.trip_id !== tripId);
+          
+          // 削除後、残った紐付け旅行のhasLinkedTripを更新
+          return updatedTrips.map(trip => {
+            // 削除されたのが個人旅行で、これがグループ旅行の場合
+            if (tripToDelete.trip_type === "personal" && 
+                trip.trip_type === "group" &&
+                trip.hasLinkedTrip &&
+                trip.location_name === tripToDelete.location_name &&
+                trip.start_date === tripToDelete.start_date &&
+                trip.end_date === tripToDelete.end_date) {
+              return { ...trip, hasLinkedTrip: false, hasPersonalVersion: false };
+            }
+            // 削除されたのがグループ旅行で、これが個人旅行の場合
+            if (tripToDelete.trip_type === "group" && 
+                trip.trip_type === "personal" &&
+                trip.hasLinkedTrip &&
+                trip.location_name === tripToDelete.location_name &&
+                trip.start_date === tripToDelete.start_date &&
+                trip.end_date === tripToDelete.end_date) {
+              return { ...trip, hasLinkedTrip: false };
+            }
+            return trip;
+          });
+        });
+      } else {
+        alert(result?.error || "削除に失敗しました。");
+      }
+    } catch (error) {
+      console.error("削除エラー:", error);
+      alert("削除中にエラーが発生しました");
+    }
+  };
+
+  const handleCreatePersonalVersion = async (groupTrip: Trip) => {
+    try {
+      const result = await createPersonalTripFromGroupTrip(groupTrip.trip_id);
+      if (result.success && result.tripId) {
+        // 成功時は新しい個人旅行をstateに追加し、グループ旅行の状態を更新
+        setTrips((currentTrips) => {
+          const updatedTrips = currentTrips.map(trip => {
+            if (trip.trip_id === groupTrip.trip_id) {
+              return { 
+                ...trip, 
+                hasPersonalVersion: true,
+                hasLinkedTrip: true 
+              };
+            }
+            return trip;
+          });
+
+          // 新しい個人旅行を追加
+          const newPersonalTrip: Trip = {
+            trip_id: result.tripId!,
+            location_name: groupTrip.location_name,
+            start_date: groupTrip.start_date,
+            end_date: groupTrip.end_date,
+            trip_type: "personal",
+            user_id: groupTrip.user_id,
+            hasLinkedTrip: true,
+            linkedTripType: "group",
+            group_id: null,
+            group_name: groupTrip.group_name // グループ名を個人旅行にも設定
+          };
+
+          return [...updatedTrips, newPersonalTrip];
+        });
+
+        alert("個人版チェックリストを作成しました！");
+      } else {
+        alert(result.error || "個人版の作成に失敗しました。");
+      }
+    } catch (error) {
+      console.error("個人版作成エラー:", error);
+      alert("個人版作成中にエラーが発生しました");
     }
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-cover bg-center py-20">
-      <div className="relative flex h-[75vh] w-[800px] max-w-[600px] flex-col gap-5 rounded-lg bg-white/85 p-10 pt-20 shadow-xl md:p-12 md:pt-24">
-        <p className="text-2xl font-bold">旅行リスト</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
+      {/* コンパクトなヘッダー */}
+      <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-16 z-40">
+        <div className="container mx-auto px-4 py-4 max-w-4xl">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className={typographyStyles.pageTitle}>旅行リスト</h1>
+            </div>
+            <button
+              onClick={() => router.push("/createtrip")}
+              className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-2 md:hidden ${typographyStyles.button}`}
+            >
+              <Plus className="h-4 w-4" />
+              新規作成
+            </button>
+          </div>
 
-        <AddTripButton />
-
-        <div className="flex flex-col items-center gap-4 overflow-y-auto p-5 pb-0">
-          {trips.length > 0 ? (
-            trips.map((trip) => (
-              <TripItem
-                key={trip.trip_id}
-                trip={trip}
-                onDelete={handleDelete} // 削除関数をPropsとして渡す
-              />
-            ))
-          ) : (
-            <NoTripsMessage />
-          )}
+          {/* コンパクトな検索バー */}
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <input
+              type="text"
+              placeholder="場所で検索..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={`w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none ${globalTextSizes.input}`}
+            />
+          </div>
         </div>
+      </div>
+
+      {/* メインコンテンツ */}
+      <div className="container mx-auto px-4 py-6 max-w-4xl">
+        {tripGroups.length > 0 ? (
+          <div className="space-y-3">
+            {tripGroups.map((group) => (
+              <TripItem
+                key={group.id}
+                trip={group.mainTrip}
+                linkedTrip={group.linkedTrip}
+                onDelete={handleDelete}
+                onCreatePersonalVersion={handleCreatePersonalVersion}
+              />
+            ))}
+          </div>
+        ) : (
+          /* 空の状態 - コンパクト版 */
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="bg-white rounded-xl p-6 shadow-md max-w-sm mx-auto">
+              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MapPin className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className={`${typographyStyles.sectionTitle} mb-2`}>
+                {searchTerm
+                  ? "検索結果が見つかりません"
+                  : "旅行を作成しましょう"}
+              </h3>
+              <p className={`${globalTextSizes.bodySmall} text-gray-600 mb-4`}>
+                {searchTerm
+                  ? "別のキーワードで検索してみてください"
+                  : "最初の旅行を作成してチェックリストを始めましょう"}
+              </p>
+              {!searchTerm && (
+                <button
+                  onClick={() => router.push("/createtrip")}
+                  className={`bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors ${typographyStyles.button}`}
+                >
+                  <Plus className="h-4 w-4 mr-2 inline" />
+                  旅行を作成
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

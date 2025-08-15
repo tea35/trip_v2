@@ -26,19 +26,20 @@ export async function linkTrips(
     // 既に紐付けされているかチェック
     const { data: existingLink } = await supabase
       .from("trip_links")
-      .select("link_id")
+      .select("link_id, id")
       .eq("personal_trip_id", personalTripId)
       .eq("group_trip_id", groupTripId)
-      .single();
+      .maybeSingle();
 
     if (existingLink) {
       return { error: "既に紐付けされています" };
     }
 
-    // 紐付けを作成
+    // 紐付けを作成（user_idも含める）
     const { error } = await supabase.from("trip_links").insert({
       personal_trip_id: personalTripId,
       group_trip_id: groupTripId,
+      user_id: user.id,
     });
 
     if (error) throw error;
@@ -72,13 +73,15 @@ export async function unlinkTrips(
       .from("trip_links")
       .delete()
       .eq("personal_trip_id", personalTripId)
-      .eq("group_trip_id", groupTripId);
+      .eq("group_trip_id", groupTripId)
+      .eq("user_id", user.id);
 
     if (error) throw error;
 
     revalidatePath("/triplist");
     return { success: true };
   } catch (error) {
+    console.error("Unlink error:", error);
     return { error: "紐付け解除に失敗しました" };
   }
 }

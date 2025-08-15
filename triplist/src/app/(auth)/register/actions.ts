@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 type SignupResult = {
   error?: string;
   values?: {
+    name?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
@@ -20,16 +21,18 @@ export async function signup(
   const supabase = await createClient();
 
   const data = {
+    name: formData.get("name") as string,
     email: formData.get("email") as string,
     password: formData.get("password") as string,
     confirmPassword: formData.get("confirmPassword") as string,
   };
 
   // 入力チェック
-  if (!data.email || !data.password || !data.confirmPassword) {
+  if (!data.name || !data.email || !data.password || !data.confirmPassword) {
     return {
       error: "すべての項目を入力してください。",
       values: {
+        name: data.name,
         email: data.email,
         password: data.password,
         confirmPassword: data.confirmPassword,
@@ -40,7 +43,12 @@ export async function signup(
   if (data.password !== data.confirmPassword) {
     return {
       error: "パスワードが一致しません。",
-      values: { email: data.email, password: "", confirmPassword: "" },
+      values: {
+        name: data.name,
+        email: data.email,
+        password: "",
+        confirmPassword: "",
+      },
     };
   }
 
@@ -48,16 +56,24 @@ export async function signup(
   const { error } = await supabase.auth.signUp({
     email: data.email,
     password: data.password,
+    options: {
+      data: {
+        name: data.name.trim(), // メタデータとして名前を保存
+      },
+    },
   });
 
   if (error) {
     return {
       error:
-        "すでに登録されているメールアドレスです。別のメールアドレスを使用してください。",
-      values: { email: data.email, password: "" }, // パスワードは空にするのが一般的
+        "サインアップに失敗しました。メールアドレスが既に使用されている可能性があります。",
+      values: {
+        name: data.name,
+        email: data.email,
+        password: "",
+      },
     };
   }
-  alert("登録完了メールを確認してください");
 
   revalidatePath("/", "layout");
   redirect("/login");

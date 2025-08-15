@@ -17,20 +17,32 @@ export async function deleteTrip(tripId: number) {
     return { error: "Not authenticated" };
   }
 
-  // 自分の旅行のみを削除できるように、user_idも条件に加える
-  const { error } = await supabase
-    .from("trips")
-    .delete()
-    .eq("trip_id", tripId)
-    .eq("user_id", user.id);
+  try {
+    // 1. まずtrip_linksテーブルから関連するリンクを削除
+    await supabase
+      .from("trip_links")
+      .delete()
+      .or(`personal_trip_id.eq.${tripId},group_trip_id.eq.${tripId}`)
+      .eq("user_id", user.id);
 
-  if (error) {
-    console.error("Delete trip error:", error);
-    return { error: "旅行の削除に失敗しました。" };
+    // 2. 旅行を削除（自分の旅行のみを削除できるように、user_idも条件に加える）
+    const { error } = await supabase
+      .from("trips")
+      .delete()
+      .eq("trip_id", tripId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Delete trip error:", error);
+      return { error: "旅行の削除に失敗しました。" };
+    }
+
+    // 旅行リストページのキャッシュをクリアして、表示を最新の状態に更新する
+    revalidatePath("/triplist");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Delete trip process error:", error);
+    return { error: "旅行の削除処理中にエラーが発生しました。" };
   }
-
-  // 旅行リストページのキャッシュをクリアして、表示を最新の状態に更新する
-  revalidatePath("/triplist");
-
-  return { success: true };
 }

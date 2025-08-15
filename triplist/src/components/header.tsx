@@ -4,7 +4,14 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetTitle,
+  SheetHeader,
+  SheetDescription,
+} from "@/components/ui/sheet";
 import { Menu, LogOut, Plus, Users, Settings } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -12,6 +19,7 @@ import type { User } from "@supabase/supabase-js";
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string>("");
   const supabase = createClient();
   const router = useRouter();
 
@@ -19,13 +27,39 @@ export default function Header() {
     const getUser = async () => {
       const { data } = await supabase.auth.getUser();
       setUser(data.user);
+
+      // ユーザーが存在する場合、名前を取得
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("user_setting")
+          .select("name")
+          .eq("user_id", data.user.id)
+          .single();
+
+        setUserName(profile?.name || "");
+      } else {
+        setUserName("");
+      }
     };
     getUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (_event, session) => {
         // sessionがあればユーザー情報を、なければnullを設定
         setUser(session?.user ?? null);
+
+        // ユーザーが存在する場合、名前を取得
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from("user_setting")
+            .select("name")
+            .eq("user_id", session.user.id)
+            .single();
+
+          setUserName(profile?.name || "");
+        } else {
+          setUserName("");
+        }
       }
     );
 
@@ -33,7 +67,7 @@ export default function Header() {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -48,7 +82,7 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="container flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <span className="flex h-9 items-center justify-center rounded-lg bg-blue-400 px-3 text-xl font-bold text-white">
@@ -56,8 +90,11 @@ export default function Header() {
           </span>
         </Link>
 
-        {/* Desktop Navigation - メニューボタンを横並び */}
-        <div className="hidden items-center space-x-4 md:flex">
+        {/* Spacer - 中央の空白スペース */}
+        <div className="flex-1"></div>
+
+        {/* Desktop Navigation - 適度に右寄りに配置 */}
+        <div className="hidden items-center space-x-4 md:flex mr-4">
           {user ? (
             <>
               <Button
@@ -117,8 +154,8 @@ export default function Header() {
           )}
         </div>
 
-        {/* Mobile Menu - モバイルのみ表示 */}
-        <div className="md:hidden">
+        {/* Mobile Menu - 適度に右寄りに配置 */}
+        <div className="md:hidden mr-2">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -127,6 +164,12 @@ export default function Header() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[350px]">
+              <SheetHeader>
+                <SheetTitle>メニュー</SheetTitle>
+                <SheetDescription className="sr-only">
+                  ナビゲーションメニューです。各機能にアクセスできます。
+                </SheetDescription>
+              </SheetHeader>
               <div className="flex flex-col h-full">
                 <div className="flex-1 py-6">
                   {user ? (

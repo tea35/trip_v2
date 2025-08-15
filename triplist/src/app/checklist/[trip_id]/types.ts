@@ -5,11 +5,15 @@ export interface Item {
   quantity: number;
 }
 export interface Trip {
+  trip_id?: number;
   location_name: string;
+  group_id?: number | null;
+  trip_type?: "personal" | "group" | null;
 }
 export interface Props {
   trip_id: number;
   initialTrip: Trip;
+  initialLinkedTrip?: Trip | null;
   initialItems: Item[];
   hideCompletedDefault: boolean;
 }

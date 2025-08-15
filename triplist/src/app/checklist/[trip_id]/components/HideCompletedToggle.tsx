@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useEffect } from "react";
 import { updateUserHideCompletedToggle } from "../actions";
+import { globalTextSizes } from "@/styles/typography";
 
 interface HideCompletedToggleProps {
   isChecked: boolean;
@@ -24,7 +25,10 @@ export default function HideCompletedToggle({
         checked={isChecked}
         onCheckedChange={onCheckedChange}
       />
-      <Label htmlFor="hide-completed-toggle" className="cursor-pointer">
+      <Label 
+        htmlFor="hide-completed-toggle" 
+        className={`cursor-pointer ${globalTextSizes.bodySmall}`}
+      >
         完了済みを非表示
       </Label>
     </div>

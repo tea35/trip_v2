@@ -144,6 +144,7 @@ export async function createTrip(
         .insert({
           personal_trip_id: personalTripId,
           group_trip_id: groupTripId,
+          user_id: user.id,
         });
 
       if (linkError) throw linkError;
@@ -184,19 +185,22 @@ export async function createTrip(
 
     // 4. チェックリストデータを生成（全ての旅行に対して）
     const dateDiff = calculateTripDays(startDateStr, endDateStr);
-    const tripsToCreateChecklistFor = [];
+    const tripsToCreateChecklistFor: { tripId: number; tripType: "personal" | "group" }[] = [];
 
-    if (personalTripId) tripsToCreateChecklistFor.push(personalTripId);
-    if (groupTripId) tripsToCreateChecklistFor.push(groupTripId);
-    if (!personalTripId && !groupTripId && newTripId)
-      tripsToCreateChecklistFor.push(newTripId);
+    if (personalTripId) tripsToCreateChecklistFor.push({ tripId: personalTripId, tripType: "personal" });
+    if (groupTripId) tripsToCreateChecklistFor.push({ tripId: groupTripId, tripType: "group" });
+    if (!personalTripId && !groupTripId && newTripId) {
+      const tripType = groupId ? "group" : "personal";
+      tripsToCreateChecklistFor.push({ tripId: newTripId, tripType });
+    }
 
-    for (const tripId of tripsToCreateChecklistFor) {
+    for (const { tripId, tripType } of tripsToCreateChecklistFor) {
       const checklistData = getChecklistTemplate(
         tripId,
         location.lat,
         location.lng,
-        dateDiff
+        dateDiff,
+        tripType
       );
 
       // 5. チェックリストデータをデータベースに挿入

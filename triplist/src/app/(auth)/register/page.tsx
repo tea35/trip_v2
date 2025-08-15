@@ -1,4 +1,5 @@
 import { RegisterForm } from "@/components/register-form";
+import { typographyStyles, globalTextSizes, textColors } from "@/styles/typography";
 
 export default function RegisterPage() {
   return (
@@ -7,11 +8,11 @@ export default function RegisterPage() {
       <div className="flex w-full max-w-6xl overflow-hidden rounded-xl bg-white/80 shadow-2xl backdrop-blur-lg">
         {/* 左側の説明エリア */}
         <div className="hidden w-1/2 flex-col justify-center p-12 text-slate-800 md:flex">
-          <h1 className="mb-2 text-4xl font-bold">忘れ物ゼロの旅へ</h1>
-          <h2 className="mb-8 text-xl text-slate-600">
+          <h1 className={`mb-2 font-bold ${typographyStyles.pageTitle}`}>忘れ物ゼロの旅へ</h1>
+          <h2 className={`mb-8 ${globalTextSizes.sectionTitle} ${textColors.secondary}`}>
             あなただけのチェックリストで、もっと自由な旅行を
           </h2>
-          <p className="text-base leading-relaxed text-slate-700">
+          <p className={`${globalTextSizes.body} leading-relaxed text-slate-700`}>
             <strong>TripList</strong>{" "}
             は、旅行前の「持ち物チェック」をもっと簡単・便利にする、あなただけの旅行準備アプリです。
             <br />
