@@ -4,7 +4,7 @@ import { getTripIdFromApiHeaders } from "@/lib/utils/url";
 
 export async function GET(
   _request: NextRequest,
-  { params: _params }: { params: { trip_id: string } }
+  { params: _params }: { params: Promise<{ trip_id: string }> }
 ) {
   try {
     const supabase = await createClient();
