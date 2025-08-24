@@ -1,11 +1,18 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
 
-export async function login(revState: string | undefined, formData: FormData) {
+type LoginResult = {
+  success: boolean;
+  error: string | null;
+};
+
+export async function login(
+  revState: LoginResult | undefined,
+  formData: FormData
+): Promise<LoginResult> {
   const supabase = await createClient();
 
   // type-casting here for convenience
@@ -17,13 +24,18 @@ export async function login(revState: string | undefined, formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
-    return (
-      "メールアドレスまたはパスワードが間違っています。" + `${error.message}`
-    );
+    return {
+      success: false,
+      error: "メールアドレスまたはパスワードが間違っています。",
+    };
   }
 
   revalidatePath("/", "layout");
   revalidatePath("/triplist", "page");
-  // 認証成功時、旅行リストページへリダイレクト
-  redirect("/triplist");
+
+  // 成功時
+  return {
+    success: true,
+    error: null,
+  };
 }

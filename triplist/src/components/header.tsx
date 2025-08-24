@@ -75,12 +75,9 @@ export default function Header() {
       // ユーザー状態をクリア
       setUser(null);
       setUserName("");
-      // ログインページにリダイレクト
       router.push("/login");
-      router.refresh();
-      setIsOpen(false);
     } catch (error) {
-      console.error("ログアウトエラー:", error);
+      console.error("ログアウト処理でエラーが発生しました:", error);
     }
   };
 
