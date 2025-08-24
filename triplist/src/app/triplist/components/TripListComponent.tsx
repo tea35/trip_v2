@@ -22,7 +22,7 @@ export default function TripListComponent({
   initialTrips,
 }: TripListProps) {
   const router = useRouter();
-  const [trips, setTrips] = useState<Trip[]>(initialTrips);
+  const [trips, _setTrips] = useState<Trip[]>(initialTrips);
   const [searchTerm, setSearchTerm] = useState("");
 
   // 旅行をグループ化する処理
@@ -116,30 +116,38 @@ export default function TripListComponent({
 
   const handleDelete = async (tripId: number) => {
     // 削除対象の旅行を見つける
-    const tripToDelete = trips.find(t => t.trip_id === tripId);
-    
+    const tripToDelete = trips.find((t) => t.trip_id === tripId);
+
     if (!tripToDelete) return;
 
     // 紐付けされた旅行の場合の削除順序制御
     if (tripToDelete.hasLinkedTrip) {
       // 紐付けされた旅行ペアを探す
-      const linkedTrip = trips.find(t => 
-        t.trip_id !== tripId &&
-        t.hasLinkedTrip &&
-        t.location_name === tripToDelete.location_name &&
-        t.start_date === tripToDelete.start_date &&
-        t.end_date === tripToDelete.end_date
+      const linkedTrip = trips.find(
+        (t) =>
+          t.trip_id !== tripId &&
+          t.hasLinkedTrip &&
+          t.location_name === tripToDelete.location_name &&
+          t.start_date === tripToDelete.start_date &&
+          t.end_date === tripToDelete.end_date
       );
 
       if (linkedTrip) {
         // 両方が存在する場合、グループ旅行を削除しようとしたら個人旅行を削除
         if (tripToDelete.trip_type === "group") {
-          if (!confirm("紐付けされた個人旅行を削除します。よろしいですか？")) return;
+          if (!confirm("紐付けされた個人旅行を削除します。よろしいですか？"))
+            return;
           tripId = linkedTrip.trip_id; // 個人旅行のIDに変更
         } else {
-          if (!confirm("この個人旅行を削除しますか？次回はグループ旅行が削除されます。")) return;
+          if (
+            !confirm(
+              "この個人旅行を削除しますか？次回はグループ旅行が削除されます。"
+            )
+          )
+            return;
         }
       } else {
+        // リンク先が見つからない場合（データ不整合の可能性があるが、そのまま削除）
         if (!confirm("この旅行を削除しますか？")) return;
       }
     } else {
@@ -149,32 +157,8 @@ export default function TripListComponent({
     try {
       const result = await deleteTrip(tripId);
       if (result?.success) {
-        setTrips((currentTrips) => {
-          const updatedTrips = currentTrips.filter((trip) => trip.trip_id !== tripId);
-          
-          // 削除後、残った紐付け旅行のhasLinkedTripを更新
-          return updatedTrips.map(trip => {
-            // 削除されたのが個人旅行で、これがグループ旅行の場合
-            if (tripToDelete.trip_type === "personal" && 
-                trip.trip_type === "group" &&
-                trip.hasLinkedTrip &&
-                trip.location_name === tripToDelete.location_name &&
-                trip.start_date === tripToDelete.start_date &&
-                trip.end_date === tripToDelete.end_date) {
-              return { ...trip, hasLinkedTrip: false, hasPersonalVersion: false };
-            }
-            // 削除されたのがグループ旅行で、これが個人旅行の場合
-            if (tripToDelete.trip_type === "group" && 
-                trip.trip_type === "personal" &&
-                trip.hasLinkedTrip &&
-                trip.location_name === tripToDelete.location_name &&
-                trip.start_date === tripToDelete.start_date &&
-                trip.end_date === tripToDelete.end_date) {
-              return { ...trip, hasLinkedTrip: false };
-            }
-            return trip;
-          });
-        });
+        // 削除成功時は、Server ActionのrevalidatePath効果を適用するためページをリロード
+        window.location.reload();
       } else {
         alert(result?.error || "削除に失敗しました。");
       }
@@ -187,44 +171,20 @@ export default function TripListComponent({
   const handleCreatePersonalVersion = async (groupTrip: Trip) => {
     try {
       const result = await createPersonalTripFromGroupTrip(groupTrip.trip_id);
+
       if (result.success && result.tripId) {
-        // 成功時は新しい個人旅行をstateに追加し、グループ旅行の状態を更新
-        setTrips((currentTrips) => {
-          const updatedTrips = currentTrips.map(trip => {
-            if (trip.trip_id === groupTrip.trip_id) {
-              return { 
-                ...trip, 
-                hasPersonalVersion: true,
-                hasLinkedTrip: true 
-              };
-            }
-            return trip;
-          });
-
-          // 新しい個人旅行を追加
-          const newPersonalTrip: Trip = {
-            trip_id: result.tripId!,
-            location_name: groupTrip.location_name,
-            start_date: groupTrip.start_date,
-            end_date: groupTrip.end_date,
-            trip_type: "personal",
-            user_id: groupTrip.user_id,
-            hasLinkedTrip: true,
-            linkedTripType: "group",
-            group_id: null,
-            group_name: groupTrip.group_name // グループ名を個人旅行にも設定
-          };
-
-          return [...updatedTrips, newPersonalTrip];
-        });
-
-        alert("個人版チェックリストを作成しました！");
+        // 成功時はクライアントサイドでリダイレクト
+        router.push(`/checklist/${result.tripId}`);
       } else {
-        alert(result.error || "個人版の作成に失敗しました。");
+        alert(result.error || "個人版の作成に失敗しました");
       }
     } catch (error) {
       console.error("個人版作成エラー:", error);
-      alert("個人版作成中にエラーが発生しました");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "個人版作成中にエラーが発生しました";
+      alert(errorMessage);
     }
   };
 

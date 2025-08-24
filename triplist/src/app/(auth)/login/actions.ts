@@ -23,6 +23,7 @@ export async function login(revState: string | undefined, formData: FormData) {
   }
 
   revalidatePath("/", "layout");
+  revalidatePath("/triplist", "page");
   // 認証成功時、旅行リストページへリダイレクト
   redirect("/triplist");
 }

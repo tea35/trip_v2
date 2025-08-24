@@ -19,17 +19,22 @@ export default function ChecklistClient({
 }: Props) {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [hideCompleted, setHideCompleted] = useState(hideCompletedDefault);
-  
+
   // デフォルトタブを個人旅行に設定
   const getDefaultTab = () => {
     if (initialLinkedTrip) {
       // 紐付けがある場合、常に個人旅行を最初に表示
-      return initialTrip.trip_type === "personal" ? "main" : "linked";
+      // 現在のtripが個人旅行なら"main"、グループ旅行なら"linked"
+      const defaultTab =
+        initialTrip.trip_type === "personal" ? "main" : "linked";
+      return defaultTab;
     }
     return "main";
   };
-  
-  const [activeTab, setActiveTab] = useState<"main" | "linked">(getDefaultTab());
+
+  const [activeTab, setActiveTab] = useState<"main" | "linked">(
+    getDefaultTab()
+  );
   const [linkedItems, setLinkedItems] = useState<Item[]>([]);
 
   // 現在アクティブな旅行IDを取得
