@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react"; // reactからインポート
+import { useActionState, useEffect } from "react"; // reactからインポート
 import { login } from "@/app/(auth)/login/actions";
 import { handleGoogleLogin } from "@/app/(auth)/login/components/GoogleLoginButton";
 import { cn } from "@/lib/utils";
@@ -15,14 +15,22 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { typographyStyles, globalTextSizes, textColors } from "@/styles/typography";
+import { typographyStyles, globalTextSizes } from "@/styles/typography";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
-  // useActionStateからエラーメッセージと保留状態(isPending)を取得
-  const [errorMessage, dispatch, isPending] = useActionState(login, undefined);
+  // useActionStateからレスポンスと保留状態(isPending)を取得
+  const [response, dispatch, isPending] = useActionState(login, undefined);
+
+  // ログイン成功時の処理
+  useEffect(() => {
+    if (response?.success) {
+      // 成功時はページ全体をリロードしてからリダイレクト
+      window.location.href = "/triplist";
+    }
+  }, [response]);
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -58,9 +66,9 @@ export function LoginForm({
                 />
               </div>
 
-              {errorMessage && (
+              {response?.error && (
                 <p className={`${globalTextSizes.bodySmall} font-medium text-red-500`}>
-                  {errorMessage}
+                  {response.error}
                 </p>
               )}
 

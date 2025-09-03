@@ -23,10 +23,10 @@ export default function ChecklistHeader({
   setActiveTab,
 }: ChecklistHeaderProps) {
   const router = useRouter();
-  
+
   // 現在アクティブな旅行を取得
   const currentTrip = activeTab === "main" ? trip : linkedTrip || trip;
-  
+
   // 旅行タイプによってアイコンとバッジの色のみ決定（背景色は変更しない）
   const getTripTypeInfo = (tripData: Trip) => {
     if (tripData.group_id && tripData.trip_type === "group") {
@@ -35,7 +35,7 @@ export default function ChecklistHeader({
         text: "グループ旅行",
         bgColor: "bg-blue-50", // バッジの背景色のみ
         textColor: "text-blue-700",
-        borderColor: "border-blue-300"
+        borderColor: "border-blue-300",
       };
     } else {
       return {
@@ -43,7 +43,7 @@ export default function ChecklistHeader({
         text: "個人旅行",
         bgColor: "bg-gray-50", // バッジの背景色のみ
         textColor: "text-gray-700",
-        borderColor: "border-gray-300"
+        borderColor: "border-gray-300",
       };
     }
   };
@@ -54,10 +54,10 @@ export default function ChecklistHeader({
   const getTabStyle = (tabType: "main" | "linked", tripData: Trip) => {
     const isActive = activeTab === tabType;
     const isGroup = tripData.group_id && tripData.trip_type === "group";
-    
+
     if (isActive) {
-      return isGroup 
-        ? "bg-blue-500 text-white border-blue-500 shadow-md" 
+      return isGroup
+        ? "bg-blue-500 text-white border-blue-500 shadow-md"
         : "bg-gray-500 text-white border-gray-500 shadow-md";
     } else {
       return "bg-white text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400";
@@ -76,20 +76,24 @@ export default function ChecklistHeader({
         </button>
 
         <div className="flex flex-col items-center gap-2">
-          <h2 className="text-lg md:text-xl lg:text-2xl font-bold">{currentTrip.location_name}</h2>
-          <div className={`flex items-center gap-2 px-3 py-1 rounded-full border ${typeInfo.bgColor} ${typeInfo.borderColor}`}>
+          <h2 className="text-lg md:text-xl lg:text-2xl font-bold">
+            {currentTrip.location_name}
+          </h2>
+          <div
+            className={`flex items-center gap-2 px-3 py-1 rounded-full border ${typeInfo.bgColor} ${typeInfo.borderColor}`}
+          >
             {typeInfo.icon}
             <span className={`text-sm font-medium ${typeInfo.textColor}`}>
               {typeInfo.text}
             </span>
           </div>
         </div>
-        
+
         {/* デスクトップ表示時のトグル */}
         <div className="absolute right-0 hidden md:block">
           <HideCompletedToggle
-            isChecked={hideCompleted} 
-            onCheckedChange={setHideCompleted} 
+            isChecked={hideCompleted}
+            onCheckedChange={setHideCompleted}
           />
         </div>
       </div>
@@ -97,8 +101,8 @@ export default function ChecklistHeader({
       {/* モバイル表示時のトグル */}
       <div className="w-full mt-4 flex justify-center md:hidden">
         <HideCompletedToggle
-          isChecked={hideCompleted} 
-          onCheckedChange={setHideCompleted} 
+          isChecked={hideCompleted}
+          onCheckedChange={setHideCompleted}
         />
       </div>
 
@@ -106,11 +110,15 @@ export default function ChecklistHeader({
       {linkedTrip && (
         <div className="w-full mt-4">
           <div className="flex gap-2 justify-center">
-            {/* 個人旅行タブを最初に表示 */}
+            {/* 常に個人旅行タブを最初に表示 */}
             {trip.trip_type === "personal" ? (
               <>
+                {/* 現在のtripが個人旅行の場合 */}
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle("main", trip)}`}
+                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                    "main",
+                    trip
+                  )}`}
                   onClick={() => setActiveTab("main")}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -119,7 +127,10 @@ export default function ChecklistHeader({
                   </div>
                 </button>
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle("linked", linkedTrip)}`}
+                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                    "linked",
+                    linkedTrip
+                  )}`}
                   onClick={() => setActiveTab("linked")}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -130,8 +141,12 @@ export default function ChecklistHeader({
               </>
             ) : (
               <>
+                {/* 現在のtripがグループ旅行の場合 */}
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle("linked", linkedTrip)}`}
+                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                    "linked",
+                    linkedTrip
+                  )}`}
                   onClick={() => setActiveTab("linked")}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -140,7 +155,10 @@ export default function ChecklistHeader({
                   </div>
                 </button>
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle("main", trip)}`}
+                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                    "main",
+                    trip
+                  )}`}
                   onClick={() => setActiveTab("main")}
                 >
                   <div className="flex items-center justify-center gap-2">

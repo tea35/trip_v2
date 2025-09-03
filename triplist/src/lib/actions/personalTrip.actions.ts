@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getChecklistTemplate } from "@/lib/data/checklistTemplates";
 import { calculateTripDays } from "@/utils/date";
+import { revalidatePath } from "next/cache";
 
 export interface CreatePersonalTripResult {
   success: boolean;
@@ -18,7 +19,9 @@ export async function createPersonalTripFromGroupTrip(
 
   try {
     // 認証チェック
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return { success: false, error: "認証が必要です" };
     }
@@ -37,7 +40,10 @@ export async function createPersonalTripFromGroupTrip(
 
     // 位置情報が存在することを確認
     if (!groupTrip.latitude || !groupTrip.longitude) {
-      return { success: false, error: "グループ旅行に位置情報が設定されていません" };
+      return {
+        success: false,
+        error: "グループ旅行に位置情報が設定されていません",
+      };
     }
 
     // ユーザーがグループのメンバーかチェック
@@ -50,7 +56,10 @@ export async function createPersonalTripFromGroupTrip(
         .single();
 
       if (!member) {
-        return { success: false, error: "このグループにアクセスする権限がありません" };
+        return {
+          success: false,
+          error: "このグループにアクセスする権限がありません",
+        };
       }
     }
 
@@ -89,29 +98,27 @@ export async function createPersonalTripFromGroupTrip(
     }
 
     // 2. trip_linksテーブルに関連付けを作成
-    const { error: linkError } = await supabase
-      .from("trip_links")
-      .insert({
-        group_trip_id: groupTripId,
-        personal_trip_id: newTrip.trip_id,
-        user_id: user.id,
-      });
+    const { error: linkError } = await supabase.from("trip_links").insert({
+      group_trip_id: groupTripId,
+      personal_trip_id: newTrip.trip_id,
+      user_id: user.id,
+    });
 
     if (linkError) {
       console.error("旅行リンク作成エラー:", linkError);
-      
+
       // リンク作成に失敗した場合、作成した個人旅行を削除（ロールバック）
-      await supabase
-        .from("trips")
-        .delete()
-        .eq("trip_id", newTrip.trip_id);
-      
+      await supabase.from("trips").delete().eq("trip_id", newTrip.trip_id);
+
       return { success: false, error: "旅行の関連付けに失敗しました" };
     }
 
     // 3. 個人旅行用のチェックリストテンプレートを作成
     try {
-      const dateDiff = calculateTripDays(groupTrip.start_date, groupTrip.end_date);
+      const dateDiff = calculateTripDays(
+        groupTrip.start_date,
+        groupTrip.end_date
+      );
       const checklistData = getChecklistTemplate(
         newTrip.trip_id,
         groupTrip.latitude,
@@ -127,28 +134,37 @@ export async function createPersonalTripFromGroupTrip(
 
       if (itemsError) {
         console.error("チェックリスト作成エラー:", itemsError);
-        
+
         // チェックリスト作成に失敗した場合、作成した個人旅行とリンクを削除（ロールバック）
-        await supabase.from("trip_links").delete().eq("personal_trip_id", newTrip.trip_id);
+        await supabase
+          .from("trip_links")
+          .delete()
+          .eq("personal_trip_id", newTrip.trip_id);
         await supabase.from("trips").delete().eq("trip_id", newTrip.trip_id);
-        
+
         return { success: false, error: "チェックリストの作成に失敗しました" };
       }
     } catch (templateError) {
       console.error("テンプレート生成エラー:", templateError);
-      
+
       // テンプレート生成に失敗した場合も同様にロールバック
-      await supabase.from("trip_links").delete().eq("personal_trip_id", newTrip.trip_id);
+      await supabase
+        .from("trip_links")
+        .delete()
+        .eq("personal_trip_id", newTrip.trip_id);
       await supabase.from("trips").delete().eq("trip_id", newTrip.trip_id);
-      
-      return { success: false, error: "チェックリストテンプレートの生成に失敗しました" };
+
+      return {
+        success: false,
+        error: "チェックリストテンプレートの生成に失敗しました",
+      };
     }
 
-    return { 
-      success: true, 
-      tripId: newTrip.trip_id,
-    };
+    // 成功時は旅行リストとチェックリストページのキャッシュを更新してリダイレクト
+    revalidatePath("/triplist", "page");
+    revalidatePath(`/checklist/${newTrip.trip_id}`, "page");
 
+    return { success: true, tripId: newTrip.trip_id };
   } catch (error) {
     console.error("個人旅行作成エラー:", error);
     return { success: false, error: "個人旅行の作成に失敗しました" };

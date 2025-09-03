@@ -1,12 +1,17 @@
 import { getChecklistData } from "@/lib/data/checklist";
 import ChecklistClient from "./checklistClient";
 import { redirect } from "next/navigation";
-import { getIdFromHeaders } from "@/lib/utils/url";
 
-export default async function ChecklistPage() {
-  const trip_id = await getIdFromHeaders();
-  // trip_idが取得できなかった場合（nullの場合）はリダイレクト
-  if (trip_id === null) {
+export default async function ChecklistPage({
+  params,
+}: {
+  params: Promise<{ trip_id: string }>;
+}) {
+  const { trip_id: tripIdString } = await params;
+  const trip_id = parseInt(tripIdString);
+  
+  // trip_idが無効な場合はリダイレクト
+  if (isNaN(trip_id)) {
     return redirect("/triplist");
   }
 

@@ -70,9 +70,15 @@ export default function Header() {
   }, [supabase]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
-    setIsOpen(false);
+    try {
+      await supabase.auth.signOut();
+      // ユーザー状態をクリア
+      setUser(null);
+      setUserName("");
+      router.push("/login");
+    } catch (error) {
+      console.error("ログアウト処理でエラーが発生しました:", error);
+    }
   };
 
   const handleNavigation = (path: string) => {
@@ -127,6 +133,7 @@ export default function Header() {
               <Button
                 variant="ghost"
                 size="sm"
+                type="button"
                 onClick={handleLogout}
                 className="flex items-center text-red-600 hover:text-red-700 hover:bg-red-50"
               >
@@ -158,22 +165,25 @@ export default function Header() {
         <div className="md:hidden mr-2">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" aria-label="メニューを開く">
                 <Menu className="h-5 w-5" />
-                <span className="sr-only">メニュー</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[350px]">
               <SheetHeader>
                 <SheetTitle>メニュー</SheetTitle>
-                <SheetDescription className="sr-only">
+                <SheetDescription>
                   ナビゲーションメニューです。各機能にアクセスできます。
                 </SheetDescription>
               </SheetHeader>
               <div className="flex flex-col h-full">
                 <div className="flex-1 py-6">
                   {user ? (
-                    <nav className="space-y-2">
+                    <nav
+                      className="space-y-2"
+                      role="navigation"
+                      aria-label="メインナビゲーション"
+                    >
                       <Button
                         variant="ghost"
                         onClick={() => handleNavigation("/createtrip")}
@@ -200,6 +210,7 @@ export default function Header() {
                       </Button>
                       <Button
                         variant="ghost"
+                        type="button"
                         onClick={handleLogout}
                         className="w-full justify-start text-left text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
@@ -208,7 +219,11 @@ export default function Header() {
                       </Button>
                     </nav>
                   ) : (
-                    <nav className="space-y-2">
+                    <nav
+                      className="space-y-2"
+                      role="navigation"
+                      aria-label="メインナビゲーション"
+                    >
                       <Button
                         variant="ghost"
                         onClick={() => handleNavigation("/login")}

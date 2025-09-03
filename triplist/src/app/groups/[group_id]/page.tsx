@@ -2,11 +2,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import GroupDetails from "./components/GroupDetails";
 import { getGroupDetails } from "./actions";
-import { getIdFromHeaders } from "@/lib/utils/url";
 
 export const dynamic = "force-dynamic";
 
-export default async function GroupPage() {
+export default async function GroupPage({
+  params,
+}: {
+  params: Promise<{ group_id: string }>;
+}) {
   try {
     const supabase = await createClient();
 
@@ -16,9 +19,10 @@ export default async function GroupPage() {
       redirect("/login");
     }
 
-    const group_id = await getIdFromHeaders();
+    const { group_id: groupIdString } = await params;
+    const group_id = parseInt(groupIdString);
 
-    if (group_id === null) {
+    if (isNaN(group_id)) {
       redirect("/groups");
     }
 

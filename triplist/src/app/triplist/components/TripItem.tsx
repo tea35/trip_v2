@@ -51,12 +51,10 @@ export default function TripItem({
 
   const style = getTripTypeStyle();
 
-  // グループ旅行で、リンクされた旅行がなく、個人版が存在しない場合
+  // グループ旅行で、現在のユーザーが個人版を作成していない場合
   const showCreatePersonalButton =
     trip.trip_type === "group" &&
-    !linkedTrip &&
-    !trip.hasPersonalVersion &&
-    !trip.hasLinkedTrip &&
+    !trip.hasPersonalVersion && // 現在のユーザーが個人版を作成済みかどうかのみチェック
     onCreatePersonalVersion;
 
   return (
