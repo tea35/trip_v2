@@ -65,7 +65,7 @@ export default function ChecklistHeader({
   };
 
   return (
-    <div className="relative flex w-full flex-col items-center justify-center py-2">
+    <div className="relative flex w-full flex-col items-center justify-center py-1">
       <div className="relative flex w-full items-center justify-center">
         <button
           className="absolute left-0 h-10 w-10 p-0 flex items-center justify-center rounded-md hover:bg-accent hover:text-accent-foreground"
@@ -99,7 +99,7 @@ export default function ChecklistHeader({
       </div>
 
       {/* モバイル表示時のトグル */}
-      <div className="w-full mt-4 flex justify-center md:hidden">
+      <div className="w-full mt-3 flex justify-center md:hidden">
         <HideCompletedToggle
           isChecked={hideCompleted}
           onCheckedChange={setHideCompleted}
@@ -108,14 +108,14 @@ export default function ChecklistHeader({
 
       {/* タブボタン（紐付けされた旅行がある場合のみ表示） */}
       {linkedTrip && (
-        <div className="w-full mt-4">
+        <div className="w-full mt-3">
           <div className="flex gap-2 justify-center">
             {/* 常に個人旅行タブを最初に表示 */}
             {trip.trip_type === "personal" ? (
               <>
                 {/* 現在のtripが個人旅行の場合 */}
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
                     "main",
                     trip
                   )}`}
@@ -127,7 +127,7 @@ export default function ChecklistHeader({
                   </div>
                 </button>
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
                     "linked",
                     linkedTrip
                   )}`}
@@ -143,7 +143,7 @@ export default function ChecklistHeader({
               <>
                 {/* 現在のtripがグループ旅行の場合 */}
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
                     "linked",
                     linkedTrip
                   )}`}
@@ -155,7 +155,7 @@ export default function ChecklistHeader({
                   </div>
                 </button>
                 <button
-                  className={`px-6 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
                     "main",
                     trip
                   )}`}

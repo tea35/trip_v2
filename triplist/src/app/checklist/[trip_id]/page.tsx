@@ -9,17 +9,19 @@ export default async function ChecklistPage({
 }) {
   const { trip_id: tripIdString } = await params;
   const trip_id = parseInt(tripIdString);
-  
+
   // trip_idが無効な場合はリダイレクト
   if (isNaN(trip_id)) {
     return redirect("/triplist");
   }
 
   // サーバーサイドで初期データを安全に取得
-  const { trip, linkedTrip, items, hide_completed } = await getChecklistData(trip_id);
+  const { trip, linkedTrip, items, hide_completed } = await getChecklistData(
+    trip_id
+  );
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-cover bg-center py-20">
+    <div className="flex min-h-screen w-full items-center justify-center bg-cover bg-center py-2 sm:py-6">
       <ChecklistClient
         trip_id={trip_id}
         initialTrip={trip}

@@ -136,8 +136,8 @@ export default function ChecklistClient({
     : currentItems;
 
   return (
-    <div className="flex h-[85vh] w-full max-w-4xl flex-col items-center rounded-lg bg-white/85 p-8 shadow-xl">
-      <div className="w-full mb-5">
+    <div className="flex h-[95vh] sm:h-[85vh] w-full max-w-4xl flex-col items-center rounded-lg bg-white/85 p-4 sm:p-8 shadow-xl">
+      <div className="w-full mb-2">
         <ChecklistHeader
           trip={initialTrip}
           linkedTrip={initialLinkedTrip}
@@ -149,7 +149,7 @@ export default function ChecklistClient({
       </div>
 
       <div
-        className={`h-full w-full overflow-y-auto border border-gray-400 bg-transparent p-4 rounded-lg`}
+        className={`h-full w-full overflow-y-auto border border-gray-400 bg-transparent p-3 sm:p-4 rounded-lg`}
       >
         <ul>
           {filteredItems.length > 0 ? (
@@ -172,7 +172,7 @@ export default function ChecklistClient({
         </ul>
       </div>
 
-      <div className="w-full mt-5 flex flex-col gap-3">
+      <div className="w-full mt-3 sm:mt-5 flex flex-col gap-3">
         <AddItemForm tripId={currentTripId} />
         <AiSuggestion tripId={currentTripId} />
       </div>
