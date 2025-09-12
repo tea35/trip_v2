@@ -115,7 +115,7 @@ export default function ChecklistHeader({
               <>
                 {/* 現在のtripが個人旅行の場合 */}
                 <button
-                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-32 sm:w-44 px-3 py-2 sm:py-3 text-sm font-medium border-2 transition-all rounded-lg whitespace-nowrap ${getTabStyle(
                     "main",
                     trip
                   )}`}
@@ -127,7 +127,7 @@ export default function ChecklistHeader({
                   </div>
                 </button>
                 <button
-                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-32 sm:w-44 px-3 py-2 sm:py-3 text-sm font-medium border-2 transition-all rounded-lg whitespace-nowrap ${getTabStyle(
                     "linked",
                     linkedTrip
                   )}`}
@@ -143,7 +143,7 @@ export default function ChecklistHeader({
               <>
                 {/* 現在のtripがグループ旅行の場合 */}
                 <button
-                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-32 sm:w-44 px-3 py-2 sm:py-3 text-sm font-medium border-2 transition-all rounded-lg whitespace-nowrap ${getTabStyle(
                     "linked",
                     linkedTrip
                   )}`}
@@ -155,7 +155,7 @@ export default function ChecklistHeader({
                   </div>
                 </button>
                 <button
-                  className={`w-40 sm:w-44 px-3 py-3 text-sm font-medium border-2 transition-all rounded-lg ${getTabStyle(
+                  className={`w-32 sm:w-44 px-3 py-2 sm:py-3 text-sm font-medium border-2 transition-all rounded-lg whitespace-nowrap ${getTabStyle(
                     "main",
                     trip
                   )}`}

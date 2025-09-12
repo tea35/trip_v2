@@ -76,16 +76,16 @@ export default function CreateTripForm() {
   return (
     <form
       action={formAction}
-      className="flex w-full max-w-3xl flex-col gap-5 rounded-lg bg-white/85 p-10 shadow-xl"
+      className="flex w-full max-w-3xl flex-col gap-3 sm:gap-5 rounded-lg bg-white/85 p-4 sm:p-10 shadow-xl"
     >
-      <p className="mx-auto text-2xl font-bold">旅行情報</p>
-      <p className="text-center text-lg text-gray-700">
+      <p className="mx-auto text-xl font-bold mb-1 sm:mb-2">旅行情報</p>
+      <p className="text-center text-lg text-gray-700 mb-2">
         旅行情報を入力してください
       </p>
       <div className="flex justify-center">
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-3 sm:gap-8">
           {/* 場所入力*/}
-          <div className="flex w-[300px] flex-col">
+          <div className="flex w-[300px] flex-col mb-3 sm:mb-6">
             <label htmlFor="location" className="mb-2 text-xl font-semibold">
               場所
             </label>
@@ -100,7 +100,7 @@ export default function CreateTripForm() {
           </div>
 
           {/* 旅行タイプ選択 */}
-          <div className="flex w-[300px] flex-col gap-4">
+          <div className="flex w-[300px] flex-col gap-2 sm:gap-4 mb-3 sm:mb-6">
             <div className="flex items-center justify-between">
               <label className="text-xl font-semibold">
                 グループ旅行として作成
@@ -210,7 +210,7 @@ export default function CreateTripForm() {
           </div>
 
           {/* 日付選択グループ */}
-          <div className="flex flex-col">
+          <div className="flex flex-col mb-3 sm:mb-6">
             <label className="mb-2 text-xl font-semibold">日付</label>
             <Calendar23
               dateRange={dateRange}
@@ -235,12 +235,12 @@ export default function CreateTripForm() {
       </div>
 
       {state.error && (
-        <div className="mt-4 text-center text-red-600 text-lg font-medium">
+        <div className="mt-3 sm:mt-4 text-center text-red-600 text-lg font-medium">
           {state.error}
         </div>
       )}
 
-      <div className="my-5 h-px w-full bg-gray-300" />
+      <div className="my-3 sm:my-5 h-px w-full bg-gray-300" />
 
       <Button
         className="mx-auto h-12 w-48 rounded-lg bg-blue-600 text-xl font-semibold text-white shadow-md transition-colors hover:bg-blue-700 disabled:opacity-50"
