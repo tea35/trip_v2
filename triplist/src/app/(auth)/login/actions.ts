@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-
 import { createClient } from "@/lib/supabase/server";
 
 type LoginResult = {
@@ -21,6 +20,7 @@ export async function login(
     email: formData.get("email") as string,
     password: formData.get("password") as string,
   };
+
   const { error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {

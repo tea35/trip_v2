@@ -171,10 +171,8 @@ export default function Header() {
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[350px]">
               <SheetHeader>
-                <SheetTitle>メニュー</SheetTitle>
-                <SheetDescription>
-                  ナビゲーションメニューです。各機能にアクセスできます。
-                </SheetDescription>
+                <SheetTitle>TripList</SheetTitle>
+                <SheetDescription>メニュー</SheetDescription>
               </SheetHeader>
               <div className="flex flex-col h-full">
                 <div className="flex-1 py-6">
