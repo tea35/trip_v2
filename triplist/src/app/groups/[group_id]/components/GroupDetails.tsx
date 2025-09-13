@@ -12,6 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Users,
@@ -129,7 +130,7 @@ export default function GroupDetails({ group }: GroupDetailsProps) {
       {/* グループヘッダー */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center space-x-3">
               <div>
                 <CardTitle
@@ -138,16 +139,10 @@ export default function GroupDetails({ group }: GroupDetailsProps) {
                   <Users className="h-6 w-6 text-blue-500 mr-2" />
                   {group.group_name}
                 </CardTitle>
-                <p
-                  className={`${globalTextSizes.bodySmall} text-gray-600 mt-1`}
-                >
-                  作成日:{" "}
-                  {new Date(group.created_at).toLocaleDateString("ja-JP")}
-                </p>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-2 sm:mt-0">
               {/* メンバー追加ボタン - 全メンバーが使用可能 */}
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
@@ -162,11 +157,11 @@ export default function GroupDetails({ group }: GroupDetailsProps) {
                       メンバーを追加
                     </DialogTitle>
                   </DialogHeader>
+                  <DialogDescription>
+                    メールアドレスを入力して「追加」ボタンを押してください。
+                  </DialogDescription>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="email" className={globalTextSizes.label}>
-                        メールアドレス
-                      </Label>
                       <Input
                         id="email"
                         type="email"
@@ -225,12 +220,11 @@ export default function GroupDetails({ group }: GroupDetailsProps) {
                         グループを削除
                       </DialogTitle>
                     </DialogHeader>
+                    <DialogDescription>
+                      本当に「{group.group_name}
+                      」を削除しますか？この操作は取り消せません。
+                    </DialogDescription>
                     <div className="space-y-4">
-                      <p className={`${globalTextSizes.body} text-gray-600`}>
-                        本当に「{group.group_name}
-                        」を削除しますか？この操作は取り消せません。
-                      </p>
-
                       <div className="flex gap-2 justify-end">
                         <Button
                           type="button"
@@ -311,16 +305,49 @@ export default function GroupDetails({ group }: GroupDetailsProps) {
 
                 {/* メンバー削除ボタン（管理者以外のメンバーは削除可能 - サーバー側で権限チェック） */}
                 {member.role !== "admin" && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleRemoveMember(member.user_id)}
-                    disabled={isPending}
-                    className={`${typographyStyles.button} text-red-600 hover:text-red-700`}
-                  >
-                    <UserMinus className="h-4 w-4 mr-1" />
-                    削除
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className={`${typographyStyles.button} text-red-600 hover:text-red-700`}
+                        disabled={isPending}
+                      >
+                        <UserMinus className="h-4 w-4 mr-1" />
+                        削除
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle className={typographyStyles.cardTitle}>
+                          メンバーを削除
+                        </DialogTitle>
+                      </DialogHeader>
+                      <DialogDescription>
+                        本当に「{member.name || maskIdentifier(member.email)}
+                        」をグループから削除しますか？この操作は取り消せません。
+                      </DialogDescription>
+                      <div className="flex gap-2 justify-end mt-4">
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={typographyStyles.button}
+                          >
+                            キャンセル
+                          </Button>
+                        </DialogTrigger>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={() => handleRemoveMember(member.user_id)}
+                          disabled={isPending}
+                          className={typographyStyles.button}
+                        >
+                          {isPending ? "削除中..." : "削除"}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 )}
               </div>
             ))}
