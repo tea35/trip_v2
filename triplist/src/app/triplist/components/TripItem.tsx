@@ -20,8 +20,6 @@ export default function TripItem({
 }: TripItemProps) {
   const router = useRouter();
   const days = ["日", "月", "火", "水", "木", "金", "土"];
-  console.log(trip);
-  console.log("linkedTrip", linkedTrip);
 
   function formatDateWithDay(dateStr: string): string {
     const date = new Date(dateStr);

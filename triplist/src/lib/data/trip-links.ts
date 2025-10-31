@@ -7,13 +7,11 @@ export interface TripWithLink extends Trip {
   trip_type: "personal" | "group";
 }
 
-// 紐付けを考慮したtrips取得（Triplist画面用）
 export async function getTripsWithLinks(
   userId: string
 ): Promise<TripWithLink[]> {
   const supabase = await createClient();
 
-  // 1. 全ての旅行を取得（個人＋グループ）
   const { data: allTrips, error } = await supabase
     .from("trips")
     .select(
@@ -38,18 +36,15 @@ export async function getTripsWithLinks(
     return [];
   }
 
-  // 2. 紐付けされているペアを抽出
   const linkedPairs = new Set<string>();
   const result: TripWithLink[] = [];
 
   allTrips?.forEach((trip) => {
     const tripKey = `${trip.trip_id}_${trip.trip_type}`;
 
-    // 既に処理済みならスキップ
     if (linkedPairs.has(tripKey)) return;
 
     if (trip.trip_type === "personal" && trip.trip_links_personal?.length > 0) {
-      // 個人旅行で紐付けあり
       const linkedGroupTrip = trip.trip_links_personal[0].group_trip;
 
       result.push({
@@ -59,14 +54,12 @@ export async function getTripsWithLinks(
         trip_type: "personal",
       });
 
-      // 対応するグループ旅行は表示しない
       linkedPairs.add(`${linkedGroupTrip.trip_id}_group`);
       linkedPairs.add(tripKey);
     } else if (
       trip.trip_type === "group" &&
       trip.trip_links_group?.length > 0
     ) {
-      // グループ旅行で紐付けあり（個人旅行側で処理済みでなければ）
       const linkedPersonalTrip = trip.trip_links_group[0].personal_trip;
 
       if (!linkedPairs.has(`${linkedPersonalTrip.trip_id}_personal`)) {
@@ -81,7 +74,6 @@ export async function getTripsWithLinks(
         linkedPairs.add(`${linkedPersonalTrip.trip_id}_personal`);
       }
     } else {
-      // 紐付けなしの旅行
       result.push({
         ...trip,
         is_linked: false,
@@ -95,7 +87,6 @@ export async function getTripsWithLinks(
   return result;
 }
 
-// チェックリスト画面用：紐付けされた旅行のアイテムを両方取得
 export async function getLinkedChecklistData(tripId: number) {
   const supabase = await createClient();
 
@@ -133,7 +124,6 @@ export async function getLinkedChecklistData(tripId: number) {
     linkedTripId = mainTrip.trip_links_group[0].personal_trip_id;
   }
 
-  // アイテムを取得（メイン旅行＋紐付け旅行）
   const tripIds = linkedTripId ? [tripId, linkedTripId] : [tripId];
 
   const { data: items } = await supabase

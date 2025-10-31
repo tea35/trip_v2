@@ -9,7 +9,6 @@ import TripItem from "./TripItem";
 import { deleteTrip } from "../actions";
 import { createPersonalTripFromGroupTrip } from "@/lib/actions/personalTrip.actions";
 
-// 旅行グループの型定義
 interface TripGroup {
   id: string;
   mainTrip: Trip;
@@ -158,7 +157,6 @@ export default function TripListComponent({
       const result = await createPersonalTripFromGroupTrip(groupTrip.trip_id);
 
       if (result.success && result.tripId) {
-        // 成功時はクライアントサイドでリダイレクト
         router.push(`/checklist/${result.tripId}`);
       } else {
         alert(result.error || "個人版の作成に失敗しました");
@@ -220,7 +218,6 @@ export default function TripListComponent({
             ))}
           </div>
         ) : (
-          /* 空の状態 - コンパクト版 */
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="bg-white rounded-xl p-6 shadow-md max-w-sm mx-auto">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
