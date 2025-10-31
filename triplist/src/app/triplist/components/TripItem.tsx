@@ -5,12 +5,11 @@ import type { Trip } from "../types";
 import { Trash2, Users, User, Plus } from "lucide-react";
 import { globalTextSizes, textColors } from "@/styles/typography";
 
-// このコンポーネントが受け取るPropsの型を定義
 interface TripItemProps {
   trip: Trip;
-  linkedTrip?: Trip; // 紐付けされた旅行（両方の場合）
+  linkedTrip?: Trip;
   onDelete: (tripId: number) => void;
-  onCreatePersonalVersion?: (trip: Trip) => void; // 個人版作成ハンドラー
+  onCreatePersonalVersion?: (trip: Trip) => void;
 }
 
 export default function TripItem({
@@ -27,22 +26,20 @@ export default function TripItem({
     const localDate = new Date(
       date.getTime() + date.getTimezoneOffset() * 60000
     );
+
     return `${dateStr}(${days[localDate.getDay()]})`;
   }
 
-  // 旅行タイプによってアイコンとバッジの色を決定
   const getTripTypeStyle = () => {
     if (trip.group_id && trip.trip_type === "group") {
       return {
-        icon: <Users className="h-5 w-5 text-blue-600" />,
-        typeText: "グループ旅行",
+        typeText: "グループ",
         typeColor: "text-blue-700",
         bgBadge: "bg-blue-50 border-blue-200",
       };
     } else {
       return {
-        icon: <User className="h-5 w-5 text-gray-600" />,
-        typeText: "個人旅行",
+        typeText: "個人",
         typeColor: "text-gray-700",
         bgBadge: "bg-gray-50 border-gray-200",
       };
@@ -51,32 +48,18 @@ export default function TripItem({
 
   const style = getTripTypeStyle();
 
-  // グループ旅行で、現在のユーザーが個人版を作成していない場合
   const showCreatePersonalButton =
     trip.trip_type === "group" &&
-    !trip.hasPersonalVersion && // 現在のユーザーが個人版を作成済みかどうかのみチェック
+    !trip.hasPersonalVersion &&
     onCreatePersonalVersion;
 
   return (
     <div className="relative rounded-lg bg-white border border-gray-200 shadow-sm transition-all duration-300 hover:shadow-md hover:border-blue-300 border-l-4 border-l-blue-400 group">
-      {/* メイン情報 */}
       <div
         className="flex h-14 w-full cursor-pointer items-center justify-between px-4 py-3 transition-all duration-300 hover:scale-[1.01]"
         onClick={() => router.push(`/checklist/${trip.trip_id}`)}
       >
-        {/* 旅行タイプアイコン */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
-            {linkedTrip ? (
-              <div className="flex items-center gap-1">
-                <User className="h-4 w-4 text-gray-600" />
-                <Users className="h-4 w-4 text-blue-600" />
-              </div>
-            ) : (
-              <div className="transition-colors duration-300">{style.icon}</div>
-            )}
-          </div>
-
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <h3
@@ -97,6 +80,15 @@ export default function TripItem({
                   {style.typeText}
                 </span>
               )}
+              {(trip.trip_type === "group" || linkedTrip) &&
+                trip.group_name && (
+                  <span
+                    className={`${globalTextSizes.listItemMeta} ${textColors.secondary} flex-shrink-0 flex`}
+                  >
+                    <Users className="h-5 w-5 text-blue-600" />
+                    {trip.group_name}
+                  </span>
+                )}
             </div>
             <div className="flex items-center gap-4">
               <p
@@ -105,26 +97,6 @@ export default function TripItem({
                 {formatDateWithDay(trip.start_date)} ～{" "}
                 {formatDateWithDay(trip.end_date)}
               </p>
-              {/* グループ旅行または両方の場合、グループ名を表示 */}
-              {(trip.trip_type === "group" || linkedTrip) &&
-                trip.group_name && (
-                  <span
-                    className={`${globalTextSizes.listItemMeta} ${textColors.secondary} flex-shrink-0`}
-                  >
-                    {trip.group_name}
-                  </span>
-                )}
-              {/* linkedTripがあるがtripがpersonalの場合、linkedTripのgroup_nameを表示 */}
-              {linkedTrip &&
-                trip.trip_type === "personal" &&
-                linkedTrip.group_name &&
-                !trip.group_name && (
-                  <span
-                    className={`${globalTextSizes.listItemMeta} ${textColors.secondary} flex-shrink-0`}
-                  >
-                    {linkedTrip.group_name}
-                  </span>
-                )}
             </div>
           </div>
         </div>

@@ -9,7 +9,6 @@ import TripItem from "./TripItem";
 import { deleteTrip } from "../actions";
 import { createPersonalTripFromGroupTrip } from "@/lib/actions/personalTrip.actions";
 
-// 旅行グループの型定義
 interface TripGroup {
   id: string;
   mainTrip: Trip;
@@ -25,12 +24,10 @@ export default function TripListComponent({
   const [trips, _setTrips] = useState<Trip[]>(initialTrips);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // 旅行をグループ化する処理
   const tripGroups = useMemo(() => {
     const processedIds = new Set<number>();
     const groups: TripGroup[] = [];
 
-    // 検索フィルタリング
     const filteredTrips = trips.filter((trip) =>
       trip.location_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -39,9 +36,7 @@ export default function TripListComponent({
       if (processedIds.has(trip.trip_id)) return;
 
       if (trip.hasLinkedTrip) {
-        // グループ旅行の場合：関連する個人旅行があるかチェック
         if (trip.trip_type === "group") {
-          // このグループ旅行に関連する個人旅行を探す
           const linkedPersonalTrip = filteredTrips.find(
             (t) =>
               t.trip_id !== trip.trip_id &&
@@ -53,7 +48,6 @@ export default function TripListComponent({
           );
 
           if (linkedPersonalTrip) {
-            // グループ旅行をメイン、個人旅行をリンクにする
             groups.push({
               id: `linked_${trip.trip_id}_${linkedPersonalTrip.trip_id}`,
               mainTrip: trip,
@@ -73,7 +67,6 @@ export default function TripListComponent({
             processedIds.add(trip.trip_id);
           }
         } else if (trip.trip_type === "personal") {
-          // 個人旅行でリンクがある場合：対応するグループ旅行を探す
           const linkedGroupTrip = filteredTrips.find(
             (t) =>
               t.trip_id !== trip.trip_id &&
@@ -85,7 +78,6 @@ export default function TripListComponent({
           );
 
           if (!linkedGroupTrip) {
-            // 対応するグループ旅行が見つからない場合（表示範囲外）
             groups.push({
               id: `single_${trip.trip_id}`,
               mainTrip: trip,
@@ -93,10 +85,8 @@ export default function TripListComponent({
             });
             processedIds.add(trip.trip_id);
           }
-          // グループ旅行が見つかった場合は、グループ旅行の処理で一緒に処理される
         }
       } else {
-        // リンクがない旅行
         groups.push({
           id: `single_${trip.trip_id}`,
           mainTrip: trip,
@@ -106,7 +96,6 @@ export default function TripListComponent({
       }
     });
 
-    // 出発日順でソート
     return groups.sort(
       (a, b) =>
         new Date(b.mainTrip.start_date).getTime() -
@@ -115,14 +104,11 @@ export default function TripListComponent({
   }, [trips, searchTerm]);
 
   const handleDelete = async (tripId: number) => {
-    // 削除対象の旅行を見つける
     const tripToDelete = trips.find((t) => t.trip_id === tripId);
 
     if (!tripToDelete) return;
 
-    // 紐付けされた旅行の場合の削除順序制御
     if (tripToDelete.hasLinkedTrip) {
-      // 紐付けされた旅行ペアを探す
       const linkedTrip = trips.find(
         (t) =>
           t.trip_id !== tripId &&
@@ -133,11 +119,10 @@ export default function TripListComponent({
       );
 
       if (linkedTrip) {
-        // 両方が存在する場合、グループ旅行を削除しようとしたら個人旅行を削除
         if (tripToDelete.trip_type === "group") {
           if (!confirm("紐付けされた個人旅行を削除します。よろしいですか？"))
             return;
-          tripId = linkedTrip.trip_id; // 個人旅行のIDに変更
+          tripId = linkedTrip.trip_id;
         } else {
           if (
             !confirm(
@@ -147,7 +132,6 @@ export default function TripListComponent({
             return;
         }
       } else {
-        // リンク先が見つからない場合（データ不整合の可能性があるが、そのまま削除）
         if (!confirm("この旅行を削除しますか？")) return;
       }
     } else {
@@ -173,7 +157,6 @@ export default function TripListComponent({
       const result = await createPersonalTripFromGroupTrip(groupTrip.trip_id);
 
       if (result.success && result.tripId) {
-        // 成功時はクライアントサイドでリダイレクト
         router.push(`/checklist/${result.tripId}`);
       } else {
         alert(result.error || "個人版の作成に失敗しました");
@@ -235,7 +218,6 @@ export default function TripListComponent({
             ))}
           </div>
         ) : (
-          /* 空の状態 - コンパクト版 */
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="bg-white rounded-xl p-6 shadow-md max-w-sm mx-auto">
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
