@@ -26,21 +26,20 @@ export default function TripItem({
     const localDate = new Date(
       date.getTime() + date.getTimezoneOffset() * 60000
     );
+
     return `${dateStr}(${days[localDate.getDay()]})`;
   }
 
   const getTripTypeStyle = () => {
     if (trip.group_id && trip.trip_type === "group") {
       return {
-        icon: <Users className="h-5 w-5 text-blue-600" />,
-        typeText: "グループ旅行",
+        typeText: "グループ",
         typeColor: "text-blue-700",
         bgBadge: "bg-blue-50 border-blue-200",
       };
     } else {
       return {
-        icon: <User className="h-5 w-5 text-gray-600" />,
-        typeText: "個人旅行",
+        typeText: "個人",
         typeColor: "text-gray-700",
         bgBadge: "bg-gray-50 border-gray-200",
       };
@@ -61,17 +60,6 @@ export default function TripItem({
         onClick={() => router.push(`/checklist/${trip.trip_id}`)}
       >
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
-            {linkedTrip ? (
-              <div className="flex items-center gap-1">
-                <User className="h-4 w-4 text-gray-600" />
-                <Users className="h-4 w-4 text-blue-600" />
-              </div>
-            ) : (
-              <div className="transition-colors duration-300">{style.icon}</div>
-            )}
-          </div>
-
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
               <h3
@@ -92,6 +80,15 @@ export default function TripItem({
                   {style.typeText}
                 </span>
               )}
+              {(trip.trip_type === "group" || linkedTrip) &&
+                trip.group_name && (
+                  <span
+                    className={`${globalTextSizes.listItemMeta} ${textColors.secondary} flex-shrink-0 flex`}
+                  >
+                    <Users className="h-5 w-5 text-blue-600" />
+                    {trip.group_name}
+                  </span>
+                )}
             </div>
             <div className="flex items-center gap-4">
               <p
@@ -100,24 +97,6 @@ export default function TripItem({
                 {formatDateWithDay(trip.start_date)} ～{" "}
                 {formatDateWithDay(trip.end_date)}
               </p>
-              {(trip.trip_type === "group" || linkedTrip) &&
-                trip.group_name && (
-                  <span
-                    className={`${globalTextSizes.listItemMeta} ${textColors.secondary} flex-shrink-0`}
-                  >
-                    {trip.group_name}
-                  </span>
-                )}
-              {linkedTrip &&
-                trip.trip_type === "personal" &&
-                linkedTrip.group_name &&
-                !trip.group_name && (
-                  <span
-                    className={`${globalTextSizes.listItemMeta} ${textColors.secondary} flex-shrink-0`}
-                  >
-                    {linkedTrip.group_name}
-                  </span>
-                )}
             </div>
           </div>
         </div>

@@ -135,7 +135,6 @@ export async function getTrips(userId: string): Promise<Trip[]> {
         let linkedTripType: "personal" | "group" | null = null;
         let hasPersonalVersion = false;
         let personalTripId: number | undefined;
-        let group_name: string | undefined;
 
         if (hasLinkedTrip) {
           linkedTripType = trip.trip_type === "personal" ? "group" : "personal";
@@ -153,7 +152,7 @@ export async function getTrips(userId: string): Promise<Trip[]> {
           }
         }
 
-        const allTrips: Trip = {
+        const formattedAllTrips: Trip = {
           trip_id: trip.trip_id,
           location_name: trip.location_name,
           start_date: trip.start_date,
@@ -162,11 +161,12 @@ export async function getTrips(userId: string): Promise<Trip[]> {
           trip_type: trip.trip_type,
           hasLinkedTrip,
           linkedTripType,
-          group_name,
+          group_name: trip.groups?.group_name,
           hasPersonalVersion,
           personalTripId,
         };
-        return allTrips;
+
+        return formattedAllTrips;
       })
     );
 
